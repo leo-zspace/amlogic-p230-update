@@ -1,7 +1,12 @@
 cmake_minimum_required(VERSION 3.12)
-project(untitled)
+project(update)
 
-set(CMAKE_CXX_STANDARD 14)
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(LIBUSB REQUIRED libusb)
 
-add_executable(untitled
-        Amldbglog/Amldbglog.c AmlLibusb/AmlLibusb.cpp AmlUsbScan/AmlUsbScan.cpp AmlUsbScanX3/AmlUsbScanX3.c  UsbRomDrv/UsbRomDrv.cpp AmlTime.c  update.cpp)
+add_executable(update
+        Amldbglog/Amldbglog.cpp AmlLibusb/AmlLibusb.cpp AmlUsbScan/AmlUsbScan.cpp
+        AmlUsbScanX3/AmlUsbScanX3.cpp UsbRomDrv/UsbRomDrv.cpp AmlTime.c update.cpp)
+target_link_libraries(update ${LIBUSB_LIBRARIES})
+target_include_directories(update PUBLIC ${LIBUSB_INCLUDE_DIRS})
+target_compile_options(update PUBLIC ${LIBUSB_CFLAGS_OTHER})

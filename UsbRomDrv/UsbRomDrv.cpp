@@ -6,130 +6,138 @@
 #include "../AmlTime.h"
 #include "../defs.h"
 
-int AmlUsbWriteLargeMem::AmlUsbWriteLargeMem (AmlUsbRomRW *rom) {
-  if (ValidParamDWORD(&rom->bufferLen) != 1) {
-    return -1;
-  }
-  if (ValidParamHANDLE((void **) &rom->device) != 1) {
-    return -2;
-  }
-  if (ValidParamVOID(rom->buffer) != 1) {
-    return -3;
-  }
+namespace AmlUsbWriteLargeMem {
+  int WriteSeqNum = 0;
 
-  struct AmlUsbDrv drv = {.device = rom->device};
-  if (OpenUsbDevice(&drv) != 1) {
-    return -4;
-  }
-
-  unsigned int bufferPtr = 0; // [rsp+2Ch] [rbp-34h]
-  int startTransfer = -1; // [rsp+24h] [rbp-3Ch]
-  int transferErrorCnt = 0;
-  int retry = 0;
-  unsigned short checksum = ::checksum((unsigned short *) rom->buffer, rom->bufferLen);
-  while (true) {
-    unsigned int bufferRemain = rom->bufferLen;
-    if (++retry == 4) {
-      break;
+  int AmlUsbWriteLargeMem (AmlUsbRomRW *rom) {
+    if (ValidParamDWORD(&rom->bufferLen) != 1) {
+      return -1;
     }
-    while (bufferRemain > 0) {
-      unsigned int transferSize = min(bufferRemain, 0x1000u);
-      if (startTransfer == -1) {
-        unsigned int maxAllowedSize = min(bufferRemain, 0x10000u);
-        if (WriteLargeMemCMD(&drv, rom->address, maxAllowedSize, transferSize, checksum,
-                             AmlUsbWriteLargeMem::WriteSeqNum) == 0) {
-          break;
+    if (ValidParamHANDLE((void **) &rom->device) != 1) {
+      return -2;
+    }
+    if (ValidParamVOID(rom->buffer) != 1) {
+      return -3;
+    }
+
+    struct AmlUsbDrv drv = {.device = rom->device};
+    if (OpenUsbDevice(&drv) != 1) {
+      return -4;
+    }
+
+    unsigned int bufferPtr = 0;
+    int startTransfer = -1;
+    int transferErrorCnt = 0;
+    int retry = 0;
+    unsigned short checksum = ::checksum((unsigned short *) rom->buffer, rom->bufferLen);
+    while (true) {
+      unsigned int bufferRemain = rom->bufferLen;
+      if (++retry == 4) {
+        break;
+      }
+      while (bufferRemain > 0) {
+        unsigned int transferSize = min(bufferRemain, 0x1000u);
+        if (startTransfer == -1) {
+          unsigned int maxAllowedSize = min(bufferRemain, 0x10000u);
+          if (WriteLargeMemCMD(&drv, rom->address, maxAllowedSize, transferSize, checksum,
+                               AmlUsbWriteLargeMem::WriteSeqNum) == 0) {
+            break;
+          }
+          startTransfer = maxAllowedSize;
         }
-        startTransfer = maxAllowedSize;
+        ++AmlUsbWriteLargeMem::WriteSeqNum;
+        int actual_len = write_bulk_usb(&drv, (char *) &rom->buffer[bufferPtr],
+                                        transferSize);
+        if (actual_len) {
+          transferErrorCnt = 0;
+        } else if (++transferErrorCnt > 5) {
+          goto finish;
+        }
+        if (actual_len == -1) {
+          goto finish;
+        }
+        bufferPtr += actual_len;
+        bufferRemain -= actual_len;
       }
-      ++AmlUsbWriteLargeMem::WriteSeqNum;
-      int actual_len = write_bulk_usb(&drv, (char *) &rom->buffer[bufferPtr],
-                                      transferSize);
-      if (actual_len) {
-        transferErrorCnt = 0;
-      } else if (++transferErrorCnt > 5) {
-        goto finish;
+      if (bufferRemain == 0) {
+        break;
       }
-      if (actual_len == -1) {
-        goto finish;
-      }
-      bufferPtr += actual_len;
-      bufferRemain -= actual_len;
     }
-    if (bufferRemain == 0) {
-      break;
-    }
+
+    finish:
+    CloseUsbDevice(&drv);
+    *rom->pDataSize = bufferPtr;
+    return rom->bufferLen == bufferPtr ? 0 : -6;
   }
 
-  finish:
-  CloseUsbDevice(&drv);
-  *rom->pDataSize = bufferPtr;
-  return rom->bufferLen == bufferPtr ? 0 : -6;
 }
 
+namespace AmlUsbReadLargeMem {
+  int ReadSeqNum = 0;
 
-int AmlUsbReadLargeMem::AmlUsbReadLargeMem (AmlUsbRomRW *rom) {
-  if (ValidParamDWORD(&rom->bufferLen) != 1) {
-    return -1;
-  }
-  if (ValidParamHANDLE((void **) &rom->device) != 1) {
-    return -2;
-  }
-  if (ValidParamVOID(rom->buffer) != 1) {
-    return -3;
-  }
-
-  ++AmlUsbReadLargeMem::ReadSeqNum;
-  struct AmlUsbDrv drv = {.device = rom->device};
-  if (OpenUsbDevice(&drv) != 1) {
-    return -4;
-  }
-
-  unsigned int bufferPtr = 0;
-  int startTransfer = -1;
-  int transferErrorCnt = 0;
-  int retry = 0;
-  unsigned short checksum = ::checksum((unsigned short *) rom->buffer, rom->bufferLen);
-  while (true) {
-    if (++retry == 4) {
-      break;
+  int AmlUsbReadLargeMem (AmlUsbRomRW *rom) {
+    if (ValidParamDWORD(&rom->bufferLen) != 1) {
+      return -1;
     }
-    unsigned int bufferRemain = rom->bufferLen;
-    while (bufferRemain > 0) {
-      unsigned int transferSize = min(bufferRemain, 0x10000u);
-      if (startTransfer == -1) {
-        if (ReadLargeMemCMD(&drv, rom->address, rom->bufferLen,
-                            transferSize >= 0x1000 ? 0x1000 : min(transferSize, 0x200u),
-                            checksum, AmlUsbReadLargeMem::ReadSeqNum) == 0) {
-          break;
+    if (ValidParamHANDLE((void **) &rom->device) != 1) {
+      return -2;
+    }
+    if (ValidParamVOID(rom->buffer) != 1) {
+      return -3;
+    }
+
+    ++AmlUsbReadLargeMem::ReadSeqNum;
+    struct AmlUsbDrv drv = {.device = rom->device};
+    if (OpenUsbDevice(&drv) != 1) {
+      return -4;
+    }
+
+    unsigned int bufferPtr = 0;
+    int startTransfer = -1;
+    int transferErrorCnt = 0;
+    int retry = 0;
+    unsigned short checksum = ::checksum((unsigned short *) rom->buffer, rom->bufferLen);
+    while (true) {
+      if (++retry == 4) {
+        break;
+      }
+      unsigned int bufferRemain = rom->bufferLen;
+      while (bufferRemain > 0) {
+        unsigned int transferSize = min(bufferRemain, 0x10000u);
+        if (startTransfer == -1) {
+          if (ReadLargeMemCMD(&drv, rom->address, rom->bufferLen,
+                              transferSize >= 0x1000 ? 0x1000 : min(transferSize, 0x200u),
+                              checksum, AmlUsbReadLargeMem::ReadSeqNum) == 0) {
+            break;
+          }
+          startTransfer = transferSize;
         }
-        startTransfer = transferSize;
+        int actual_len = read_bulk_usb(&drv, (char *) &rom->buffer[bufferPtr],
+                                       transferSize);
+        if (actual_len) {
+          transferErrorCnt = 0;
+        } else if (++transferErrorCnt > 5) {
+          goto finish;
+        }
+        if (actual_len == -1) {
+          goto finish;
+        }
+        bufferPtr += actual_len;
+        bufferRemain -= actual_len;
       }
-      int actual_len = read_bulk_usb(&drv, (char *) &rom->buffer[bufferPtr],
-                                     transferSize);
-      if (actual_len) {
-        transferErrorCnt = 0;
-      } else if (++transferErrorCnt > 5) {
-        goto finish;
+      if (bufferRemain == 0) {
+        break;
       }
-      if (actual_len == -1) {
-        goto finish;
-      }
-      bufferPtr += actual_len;
-      bufferRemain -= actual_len;
     }
-    if (bufferRemain == 0) {
-      break;
-    }
+
+    finish:
+    CloseUsbDevice(&drv);
+    *rom->pDataSize = bufferPtr;
+    return rom->bufferLen == bufferPtr ? 0 : -6;
   }
 
-  finish:
-  CloseUsbDevice(&drv);
-  *rom->pDataSize = bufferPtr;
-  return rom->bufferLen == bufferPtr ? 0 : -6;
 }
 
-//----- (000000000040539E) ----------------------------------------------------
 int AmlUsbReadMemCtr (AmlUsbRomRW *rom) {
   struct AmlUsbDrv drv = {.device = rom->device};
   if (OpenUsbDevice(&drv) == 0) {
@@ -153,7 +161,6 @@ int AmlUsbReadMemCtr (AmlUsbRomRW *rom) {
   return bufferRemain ? -1 : 0;
 }
 
-//----- (00000000004054CE) ----------------------------------------------------
 int AmlUsbWriteMemCtr (AmlUsbRomRW *rom) {
   struct AmlUsbDrv drv = {.device = rom->device};
   if (OpenUsbDevice(&drv) == 0) {
@@ -176,7 +183,6 @@ int AmlUsbWriteMemCtr (AmlUsbRomRW *rom) {
   return bufferRemain == 0;
 }
 
-//----- (00000000004055DA) ----------------------------------------------------
 int AmlUsbRunBinCode (AmlUsbRomRW *rom) {
   struct AmlUsbDrv drv = {.device = rom->device};
 
@@ -191,7 +197,6 @@ int AmlUsbRunBinCode (AmlUsbRomRW *rom) {
   return ret == 1 ? 0 : -2;
 }
 
-//----- (00000000004056B8) ----------------------------------------------------
 int AmlUsbIdentifyHost (AmlUsbRomRW *rom) {
   struct AmlUsbDrv drv = {.device = rom->device};
 
@@ -206,7 +211,6 @@ int AmlUsbIdentifyHost (AmlUsbRomRW *rom) {
   return ret == 1 ? 0 : -2;
 }
 
-//----- (00000000004057A1) ----------------------------------------------------
 int AmlUsbTplCmd (AmlUsbRomRW *rom) {
   struct AmlUsbDrv drv = {.device = rom->device};
 
@@ -265,13 +269,13 @@ int AmlUsbburn (struct usb_device *device, const char *filename, unsigned int ad
   return ret ? ret : filePtr;
 }
 
-//----- (0000000000405AF3) ----------------------------------------------------
 int AmlUsbReadStatus (AmlUsbRomRW *rom) {
   struct AmlUsbDrv drv = {.device = rom->device};
   aml_printf("AmlUsbReadStatus ");
   if (OpenUsbDevice(&drv) != 1) {
     return -1;
   }
+
   int retusb = usbDeviceIoControl(&drv, 0x80002044, rom->buffer, 4, rom->buffer,
                                   rom->bufferLen, rom->pDataSize, nullptr);
   aml_printf("retusb = %d\n", retusb);
@@ -279,13 +283,13 @@ int AmlUsbReadStatus (AmlUsbRomRW *rom) {
   return retusb == 1 ? 0 : -2;
 }
 
-//----- (0000000000405BEC) ----------------------------------------------------
 int AmlUsbReadStatusEx (AmlUsbRomRW *rom, unsigned int timeout) {
   struct AmlUsbDrv drv = {.device = rom->device};
   aml_printf("AmlUsbReadStatus ");
   if (OpenUsbDevice(&drv) != 1) {
     return -1;
   }
+
   int retusb = usbDeviceIoControlEx(&drv, 0x80002044, rom->buffer, 4, rom->buffer,
                                     rom->bufferLen, rom->pDataSize, nullptr, timeout);
   aml_printf("retusb = %d\n", retusb);
@@ -293,7 +297,6 @@ int AmlUsbReadStatusEx (AmlUsbRomRW *rom, unsigned int timeout) {
   return retusb == 1 ? 0 : -2;
 }
 
-//----- (0000000000405CF1) ----------------------------------------------------
 int AmlResetDev (AmlUsbRomRW *rom) {
   if (!rom->device) {
     return -1;
@@ -308,25 +311,21 @@ int AmlResetDev (AmlUsbRomRW *rom) {
   return result;
 }
 
-//----- (0000000000405DA2) ----------------------------------------------------
 int AmlSetFileCopyComplete (AmlUsbRomRW *rom) {
   aml_printf("%s L%d not implemented", "AmlSetFileCopyComplete", 596);
   return 0;
 }
 
-//----- (0000000000405DCE) ----------------------------------------------------
 int AmlGetUpdateComplete (AmlUsbRomRW *rom) {
   aml_printf("%s L%d not implemented", "AmlGetUpdateComplete", 662);
   return 0;
 }
 
-//----- (0000000000405E02) ----------------------------------------------------
 int AmlSetFileCopyCompleteEx (AmlUsbRomRW *rom) {
   aml_printf("%s L%d not implemented", "AmlSetFileCopyCompleteEx", 730);
   return 0;
 }
 
-//----- (0000000000405E35) ----------------------------------------------------
 int AmlWriteMedia (AmlUsbRomRW *rom) {
   int result = 0;
   unsigned int checksum = 0;
@@ -408,7 +407,6 @@ int AmlWriteMedia (AmlUsbRomRW *rom) {
   return result;
 }
 
-//----- (000000000040632B) ----------------------------------------------------
 int AmlReadMedia (AmlUsbRomRW *rom) {
   struct AmlUsbDrv drv = {.device = rom->device};
   unsigned char buf[200] = {};
@@ -456,7 +454,6 @@ int AmlReadMedia (AmlUsbRomRW *rom) {
   return 0;
 }
 
-//----- (0000000000406617) ----------------------------------------------------
 int AmlUsbBulkCmd (AmlUsbRomRW *rom) {
   AmlUsbDrv drv = {.device = rom->device, .read_ep = 2};
 
@@ -504,7 +501,6 @@ int AmlUsbBulkCmd (AmlUsbRomRW *rom) {
   return success ? 0 : -2;
 }
 
-//----- (0000000000406951) ----------------------------------------------------
 int AmlUsbCtrlWr (AmlUsbRomRW *rom) {
   AmlUsbDrv drv = {.device = rom->device, .read_ep = 2};
 
@@ -517,19 +513,16 @@ int AmlUsbCtrlWr (AmlUsbRomRW *rom) {
   return ret == 1 ? 0 : -2;
 }
 
-//----- (0000000000406A3F) ----------------------------------------------------
 int ValidParamDWORD (unsigned int *a1) {
   unsigned int v1 = *a1;
   return 1;
 }
 
-//----- (0000000000406A5E) ----------------------------------------------------
 int ValidParamVOID (void *a1) {
   char v1 = *(char *) a1;
   return 1;
 }
 
-//----- (0000000000406A7B) ----------------------------------------------------
 int ValidParamHANDLE (void **a1) {
   void *v1 = *a1;
   return 1;
@@ -545,7 +538,6 @@ unsigned char *itoa1 (int value, unsigned char *str) {
   return result;
 }
 
-//----- (0000000000406ADC) ----------------------------------------------------
 int RWLargeMemCMD (AmlUsbDrv *drv, unsigned long address, int size, int bulkSize,
                    int checksum, int seqNum, char readOrWrite) {
   unsigned int inDataLen = 0; // [rsp+38h] [rbp-98h]
@@ -560,7 +552,6 @@ int RWLargeMemCMD (AmlUsbDrv *drv, unsigned long address, int size, int bulkSize
                             nullptr, 0, &inDataLen, nullptr);
 }
 
-//----- (0000000000406C2F) ----------------------------------------------------
 int RWMediaCMD (AmlUsbDrv *drv, int address, int size, int seqNum, int checksum,
                 int bulkSize, char readOrWrite, unsigned int timeout) {
   // esi
@@ -576,33 +567,28 @@ int RWMediaCMD (AmlUsbDrv *drv, int address, int size, int seqNum, int checksum,
                               sizeof(buf), nullptr, 0, &inDataLen, nullptr, timeout);
 }
 
-//----- (0000000000406D86) ----------------------------------------------------
 int WriteLargeMemCMD (AmlUsbDrv *drv, unsigned long address, int size, int bulkSize,
                       int checksum, int writeSeqNum) {
   return RWLargeMemCMD(drv, address, size, bulkSize, checksum, writeSeqNum, 0);
 }
 
-//----- (0000000000406DD3) ----------------------------------------------------
 int ReadLargeMemCMD (AmlUsbDrv *drv, unsigned long address, int size, int bulkSize,
                      int checksum, int readSeqNum) {
   return RWLargeMemCMD(drv, address, size, bulkSize, checksum, readSeqNum, 1);
 }
 
-//----- (0000000000406E20) ----------------------------------------------------
 int WriteMediaCMD (AmlUsbDrv *drv, int address, int size, int seqNum, int checksum,
                    int bulkSize, unsigned int timeout) {
   return RWMediaCMD(drv, address, size, seqNum, checksum, bulkSize, 0, timeout);
 }
 
-//----- (0000000000406E66) ----------------------------------------------------
 int ReadMediaCMD (AmlUsbDrv *drv, int address, int size, int seqNum, int checksum,
                   int bulkSize, unsigned int timeout) {
   return RWMediaCMD(drv, address, size, seqNum, checksum, bulkSize, 1, timeout);
 }
 
-//----- (0000000000406EAC) ----------------------------------------------------
 int write_bulk_usb (AmlUsbDrv *drv, char *buf, unsigned int len) {
-  int result; // rax MAPDST
+  int result;
 
   result = 0;
   if (usbWriteFile(drv, buf, len, (unsigned int *) &result) != 1) {
@@ -611,9 +597,8 @@ int write_bulk_usb (AmlUsbDrv *drv, char *buf, unsigned int len) {
   return result;
 }
 
-//----- (0000000000406F27) ----------------------------------------------------
 int read_bulk_usb (AmlUsbDrv *drv, char *buf, unsigned int len) {
-  int result; // rax MAPDST
+  int result;
 
   result = 0;
   if (usbReadFile(drv, buf, len, (unsigned int *) &result) != 1) {
@@ -622,12 +607,10 @@ int read_bulk_usb (AmlUsbDrv *drv, char *buf, unsigned int len) {
   return result;
 }
 
-//----- (0000000000406FA2) ----------------------------------------------------
 int fill_mem_usb (AmlUsbDrv *drv, char *buf) {
   return -1;
 }
 
-//----- (0000000000406FB9) ----------------------------------------------------
 int rw_ctrl_usb (AmlUsbDrv *drv, unsigned long ctrl, char *buf, unsigned long len,
                  int readOrWrite) {
   unsigned int read = 0;
@@ -642,27 +625,23 @@ int rw_ctrl_usb (AmlUsbDrv *drv, unsigned long ctrl, char *buf, unsigned long le
   }
 }
 
-//----- (00000000004070B5) ----------------------------------------------------
 int write_control_usb (AmlUsbDrv *drv, unsigned long ctrl, char *buf, unsigned long len) {
   return rw_ctrl_usb(drv, ctrl, buf, len, 0);
 }
 
-//----- (00000000004070ED) ----------------------------------------------------
 int read_control_usb (AmlUsbDrv *drv, unsigned long ctrl, char *buf, unsigned long len) {
   return rw_ctrl_usb(drv, ctrl, buf, len, 1);
 }
 
-//----- (0000000000407125) ----------------------------------------------------
 int read_usb_status (void *addr, char *buf, size_t len) {
   return -1;
 }
 
-//----- (000000000040713C) ----------------------------------------------------
 unsigned short checksum_add (unsigned short *buf, int len, int noFlip) {
   unsigned int checksum = 0;
 
   for (; len > 1; len -= 2) {
-    checksum += *buf;
+    checksum += le16toh(*buf);
     ++buf;
   }
   if (len) {
@@ -676,13 +655,12 @@ unsigned short checksum_add (unsigned short *buf, int len, int noFlip) {
   return (unsigned short) checksum;
 }
 
-//----- (00000000004071CA) ----------------------------------------------------
 unsigned int checksum_64K (void *buf, int len) {
   unsigned int checksum = 0;
 
   // process an int every time
   for (int div = len >> 2; div >= 0; div--) {
-    checksum += *(unsigned int *) buf;
+    checksum += le32toh(*(unsigned int *) buf);
     buf = (char *) buf + 4;
   }
   switch (len & 3) {
@@ -690,10 +668,10 @@ unsigned int checksum_64K (void *buf, int len) {
       checksum += *(unsigned char *) buf;
       break;
     case 2:
-      checksum += *(unsigned short *) buf;
+      checksum += le16toh(*(unsigned short *) buf);
       break;
     case 3:
-      checksum += *(int *) buf & 0xFFFFFF;
+      checksum += le32toh(*(unsigned int *) buf) & 0xFFFFFF;
       break;
     default:
       break;
@@ -701,17 +679,14 @@ unsigned int checksum_64K (void *buf, int len) {
   return checksum;
 }
 
-//----- (000000000040725C) ----------------------------------------------------
 unsigned short originale_add (unsigned short *buf, int len) {
   return checksum_add(buf, len, 1);
 }
 
-//----- (0000000000407283) ----------------------------------------------------
 unsigned short checksum (unsigned short *buf, int len) {
   return checksum_add(buf, len, 0);
 }
 
-//----- (00000000004072AA) ----------------------------------------------------
 int AmlUsbBurnWrite (AmlUsbRomRW *cmd, char *memType, unsigned long long nBytes,
                      int checksum) {
   unsigned int oldDataSize = *cmd->pDataSize;
@@ -722,17 +697,14 @@ int AmlUsbBurnWrite (AmlUsbRomRW *cmd, char *memType, unsigned long long nBytes,
   }
 
   char buf[88] = {};
-  *(unsigned int *) &buf = cmd->address;
-  *(unsigned int *) &buf[4] = 0;
-  *(int *) &buf[8] = checksum;
-  *(unsigned int *) &buf[24] = cmd->bufferLen;
-  *(unsigned int *) &buf[28] = 0;
-  *(unsigned long long *) &buf[32] = nBytes;
+  SET_INT_AT(buf, 0, cmd->address);
+  SET_INT_AT(buf, 4, 0);
+  SET_INT_AT(buf, 8, checksum);
+  SET_INT_AT(buf, 24, cmd->bufferLen);
+  SET_INT_AT(buf, 28, checksum);
+  SET_LONG_AT(buf, 32, nBytes);
   memcpy(&buf[48], memType, strlen(memType));
-  buf[80] = 0;
-  buf[81] = 0;
-  buf[82] = 0;
-  buf[83] = 0;
+  SET_INT_AT(buf, 80, 0);
   cmd->bufferLen = 88;
   cmd->buffer = buf;
   ret = AmlUsbTplCmd(cmd);

@@ -1,7 +1,7 @@
 #ifndef AML_USB_ROM_DRV_H
 #define AML_USB_ROM_DRV_H
 
-#include "../libusb/usb.h"
+#include <usb.h>
 #include "../AmlLibusb/AmlLibusb.h"
 
 struct AmlUsbRomRW {
@@ -12,14 +12,11 @@ struct AmlUsbRomRW {
   unsigned int address;
 };
 
-
 namespace AmlUsbWriteLargeMem {
-  int WriteSeqNum = 0;
   int AmlUsbWriteLargeMem (AmlUsbRomRW *rom);
 }
 
 namespace AmlUsbReadLargeMem {
-  int ReadSeqNum = 0;
   int AmlUsbReadLargeMem (AmlUsbRomRW *rom);
 }
 

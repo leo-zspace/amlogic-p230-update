@@ -308,7 +308,7 @@ int usbWriteFile (AmlUsbDrv *drv, const void *buf, unsigned int len, unsigned in
 int OpenUsbDevice (AmlUsbDrv *drv) {
   if (drv && drv->device && !drv->handle) {
     drv->handle = usb_open(drv->device);
-    drv->read_ep = 0x81;
+    drv->read_ep = (char) 0x81;
     drv->write_ep = 2;
     return 1;
   } else {

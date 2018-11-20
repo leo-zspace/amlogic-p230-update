@@ -8,7 +8,7 @@
 int gLevel;
 char gHasSetDebugLevel;
 
-int scanDevices (struct AmlscanX scan, const char *target) {
+int scanDevices (AmlscanX scan, const char *target) {
   if (strcmp(scan.vendorName, "WorldCup Device") != 0) {
     aml_printf("[Scan][ERR]L%03d:", 159);
     aml_printf("Only supports scanning for [%s]\n", "WorldCup Device");
@@ -61,7 +61,7 @@ struct usb_device *AmlGetDeviceHandle (const char *vendorName, char *targetDevic
   int nDevices = 0;
   struct usb_device *resultDevice = NULL;
   char *candidateDevices[8] = {};
-  struct AmlscanX scan = {.vendorName = vendorName, .candidateDevices = candidateDevices, .resultDevice = &resultDevice, .nDevices = &nDevices, .targetDevice = targetDevice};
+  struct AmlscanX scan = {.vendorName = vendorName, .resultDevice = &resultDevice, .targetDevice = targetDevice, .candidateDevices = candidateDevices, .nDevices = &nDevices};
 
   gLevel = 0;
   for (int i = 0; i <= 7; ++i) {

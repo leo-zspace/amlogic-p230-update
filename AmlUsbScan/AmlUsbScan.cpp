@@ -27,7 +27,6 @@ bool simg_probe (const unsigned char *buf, unsigned int len) {
   return true;
 }
 
-//----- (0000000000407490) ----------------------------------------------------
 bool is_file_format_sparse (const char *filename) {
   FILE *fp = fopen(filename, "rb");
 
@@ -47,7 +46,6 @@ bool is_file_format_sparse (const char *filename) {
   return result;
 }
 
-//----- (0000000000407564) ----------------------------------------------------
 int aml_scan_init () {
   printf("aml_scan_usbdev");
   for (int i = 0; i <= 7; ++i) {
@@ -56,7 +54,6 @@ int aml_scan_init () {
   return 0;
 }
 
-//----- (00000000004075AF) ----------------------------------------------------
 int aml_scan_close () {
   for (int i = 0; i <= 7; ++i) {
     free(DeviceName[i]);
@@ -65,9 +62,8 @@ int aml_scan_close () {
   return 0;
 }
 
-//----- (00000000004075F7) ----------------------------------------------------
 int aml_scan_usbdev (char **candidate_devices) {
-  int result; // [rsp+1Ch] [rbp-4h]
+  int result;
 
   for (int i = 0; i <= 7; ++i) {
     memset(DeviceName[i], 0, 0x100);
@@ -77,23 +73,23 @@ int aml_scan_usbdev (char **candidate_devices) {
   if (result <= 0) {
     return 0;
   }
+
   for (int i = 0; i < result; ++i) {
     candidate_devices[i] = DeviceName[i];
   }
   return result;
 }
 
-//----- (00000000004076B6) ----------------------------------------------------
 int aml_send_command (void *device, char *mem_type, int retry, char *reply) {
-  unsigned int data_len; // [rsp+28h] [rbp-F8h]
+  unsigned int data_len;
   char buffer[128] = {};
   memcpy(buffer, mem_type, strlen(mem_type));
   buffer[66] = 1;
 
-  struct AmlUsbRomRW rom = {.device = (struct usb_device *) device, .bufferLen = 68, .buffer =(char *) buffer, .pDataSize = &data_len};
+  struct AmlUsbRomRW rom = {.device = (struct usb_device *) device, .bufferLen = 68, .buffer = buffer, .pDataSize = &data_len};
 
   if (AmlUsbTplCmd(&rom) == 0) {
-    struct AmlUsbRomRW rom = {.device = (struct usb_device *) device, .bufferLen = 64, .buffer =(char *) reply};
+    struct AmlUsbRomRW rom = {.device = (struct usb_device *) device, .bufferLen = 64, .buffer = reply};
     while (--retry > 0) {
       if (AmlUsbReadStatus(&rom) == 0) {
         printf("reply %s \n", reply);
@@ -133,14 +129,14 @@ int aml_get_sn (char *target_device, char *usid) {
     return -1;
   }
 
-  char s[256]; // [rsp+70h] [rbp-310h]
-  char tmp1[256]; // [rsp+170h] [rbp-210h]
-  char tmp2[256]; // [rsp+270h] [rbp-110h]
+  char s[256];
+  char tmp1[256];
+  char tmp2[256];
   memset(s, 0, 8);
   memset(tmp1, 0, 8);
   memset(tmp2, 0, 8);
   memcpy(s, usid, strlen(usid));
-  if (strcmp(tmp1, "success") || sscanf(s, "%[^:]:(%[^)])", tmp1, tmp2) != 2) {
+  if (strcmp(tmp1, "success") != 0 || sscanf(s, "%[^:]:(%[^)])", tmp1, tmp2) != 2) {
     return 0;
   }
 
@@ -170,8 +166,8 @@ int aml_set_sn (char *target_device, char *usid) {
     return -1;
   }
 
-  char cmd[256]; // [rsp+60h] [rbp-510h]
-  char src[256]; // [rsp+160h] [rbp-410h]
+  char cmd[256];
+  char src[256];
   sprintf(cmd, "efuse write usid %s", usid);
   aml_send_command(device, "efuse write version", 50, src);
   if (aml_send_command(device, cmd, 50, src) < 0) {

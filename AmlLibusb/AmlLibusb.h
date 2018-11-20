@@ -1,7 +1,7 @@
 #ifndef AML_LIB_USB_H
 #define AML_LIB_USB_H
 
-#include "../libusb/usb.h"
+#include <usb.h>
 
 struct usbDevIoCtrl {
   usb_dev_handle *handle;
