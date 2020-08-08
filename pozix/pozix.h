@@ -82,8 +82,8 @@ typedef struct text256_s { char text[256]; } text256_t;
 
 #define finite(x) _finite(x)
 // This is Windows version of if_failed_return_result HRESULT < 0 macros:
-#define if_failed_return_result(r) do { HRESULT _hr_ = (r); if (FAILED(_hr_)) { log_err("%s failed %s", #r, strerr(_hr_)); errno = _hr_; return _hr_; } } while (0)
-#define if_failed_return(r, e) do { HRESULT _hr_ = (r); if (FAILED(_hr_)) { log_err("%s failed %s", #r, strerr(_hr_)); errno = _hr_; return e; } } while (0)
+#define if_failed_return_result(r) do { HRESULT _hr_ = (r); if (FAILED(_hr_)) { trace("%s failed %s", #r, strerr(_hr_)); errno = _hr_; return _hr_; } } while (0)
+#define if_failed_return(r, e) do { HRESULT _hr_ = (r); if (FAILED(_hr_)) { trace("%s failed %s", #r, strerr(_hr_)); errno = _hr_; return e; } } while (0)
 
 #define breakpoint() do { if (IsDebuggerPresent()) { DebugBreak(); } } while (0)
 #define set_errno(e) { errno = e; SetLastError(e); }

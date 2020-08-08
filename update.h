@@ -1,4 +1,4 @@
-#include "UsbRomDrv/UsbRomDrv.h"
+#include "UsbRomDrv.h"
 
 #define AML_CHIP_ID_LEN 12
 

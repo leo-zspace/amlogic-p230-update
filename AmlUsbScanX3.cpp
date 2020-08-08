@@ -6,11 +6,14 @@
 #include "AmlUsbScanX3.h"
 #include "Amldbglog.h"
 
+#pragma warning(disable: 4100) // unreferenced formal parameter
+
 int gLevel;
 
 char gHasSetDebugLevel;
 
 int scanDevices (AmlscanX scan, const char *target) {
+#if 0
     if (strcmp(scan.vendorName, "WorldCup Device") != 0) {
         aml_printf("[Scan][ERR]L%03d:", 159);
         aml_printf("Only supports scanning for [%s]\n", "WorldCup Device");
@@ -41,13 +44,17 @@ int scanDevices (AmlscanX scan, const char *target) {
         }
     }
     *scan.nDevices = iDevice;
+#endif
+    *scan.nDevices = 1;
     return 1;
 }
 
-int AmlScanUsbX3Devices (const char *vendorName, char **candidateDevices) {
+int AmlScanUsbX3Devices(const char *vendorName, char **candidateDevices) {
     int nDevices = 0;
-    struct AmlscanX scan = { .vendorName = vendorName,.candidateDevices = candidateDevices,.nDevices = &nDevices };
-
+    struct AmlscanX scan = {};
+    scan.vendorName = vendorName;
+    scan.candidateDevices = candidateDevices;
+    scan.nDevices = &nDevices;
     gLevel = 0;
     if (gHasSetDebugLevel != 1) {
         gHasSetDebugLevel = 1;
@@ -63,8 +70,12 @@ struct usb_device *AmlGetDeviceHandle (const char *vendorName, char *targetDevic
     int nDevices = 0;
     struct usb_device *resultDevice = NULL;
     char *candidateDevices[8] = {};
-    struct AmlscanX scan = { .vendorName = vendorName,.resultDevice = &resultDevice,.targetDevice = targetDevice,.candidateDevices = candidateDevices,.nDevices = &nDevices };
-
+    struct AmlscanX scan = {};
+    scan.vendorName = vendorName;
+    scan.resultDevice = &resultDevice;
+    scan.targetDevice = targetDevice;
+    scan.candidateDevices = candidateDevices;
+    scan.nDevices = &nDevices;
     gLevel = 0;
     for (int i = 0; i <= 7; ++i) {
         candidateDevices[i] = (char *)malloc(0x100);

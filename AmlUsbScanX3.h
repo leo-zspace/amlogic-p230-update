@@ -1,8 +1,5 @@
 #pragma once
 
-#define AML_ID_VENDOR  0x1B8E
-#define AML_ID_PRODUCE 0xC003
-
 struct AmlscanX {
     const char *vendorName;
     struct usb_device **resultDevice;

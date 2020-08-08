@@ -1,16 +1,19 @@
 #include <stdio.h>
 #include <string.h>
+#include "defs.h"
+#include "AmlTime.h"
 #include "AmlUsbScan.h"
 #include "Amldbglog.h"
 #include "UsbRomDrv.h"
 #include "AmlUsbScanX3.h"
+
+#pragma warning(disable: 4100) // unreferenced formal parameter
 
 char *DeviceName[8];
 
 bool simg_probe (const unsigned char *buf, unsigned int len) {
     const unsigned char magic[] = { 0x3A, 0xFF, 0x26, 0xED };
     const unsigned char magic2[] = { 0x28, 0, 0x12, 0 };
-
     if (len < 0x1C) {
         return false;
     }
@@ -83,11 +86,14 @@ int aml_send_command (void *device, char *mem_type, int retry, char *reply) {
     char buffer[128] = {};
     memcpy(buffer, mem_type, strlen(mem_type));
     buffer[66] = 1;
-
-    struct AmlUsbRomRW rom = { .device = (struct usb_device *) device,.bufferLen = 68,.buffer = buffer,.pDataSize = &data_len };
-
+    struct AmlUsbRomRW rom = {};
+    rom.bufferLen = 68;
+    rom.buffer = buffer;
+    rom.pDataSize = &data_len;
     if (AmlUsbTplCmd(&rom) == 0) {
-        struct AmlUsbRomRW rom = { .device = (struct usb_device *) device,.bufferLen = 64,.buffer = reply };
+        memset(&rom, 0, sizeof(rom));
+        rom.bufferLen = 64;
+        rom.buffer = reply;
         while (--retry > 0) {
             if (AmlUsbReadStatus(&rom) == 0) {
                 printf("reply %s \n", reply);
@@ -100,25 +106,24 @@ int aml_send_command (void *device, char *mem_type, int retry, char *reply) {
 }
 
 //----- (0000000000407898) ----------------------------------------------------
+
 int aml_get_sn (char *target_device, char *usid) {
     struct usb_device *device = AmlGetDeviceHandle("WorldCup Device", target_device);
     if (!device) {
         return -1;
     }
-
     char buffer[8] = {};
-    struct AmlUsbRomRW rom = { .device = device,.bufferLen = 4,.buffer = buffer };
-
+    struct AmlUsbRomRW rom = {};
+    rom.bufferLen = 4;
+    rom.buffer = buffer;
     if (AmlUsbIdentifyHost(&rom)) {
         device = nullptr;
         return -1;
     }
-
     if (buffer[3] != '\x10') {
         device = nullptr;
         return -1;
     }
-
     aml_send_command(device, "efuse write version", 50, usid);
     int ret = aml_send_command(device, "efuse read usid", 50, usid);
     printf("%s \n", usid);
@@ -126,7 +131,6 @@ int aml_get_sn (char *target_device, char *usid) {
         device = nullptr;
         return -1;
     }
-
     char s[256];
     char tmp1[256];
     char tmp2[256];
@@ -137,11 +141,10 @@ int aml_get_sn (char *target_device, char *usid) {
     if (strcmp(tmp1, "success") != 0 || sscanf(s, "%[^:]:(%[^)])", tmp1, tmp2) != 2) {
         return 0;
     }
-
     memset(usid, 0, 8);
     memcpy(usid, tmp2, strlen(tmp2));
     device = nullptr;
-    return strlen(tmp2);
+    return (int)strlen(tmp2);
 }
 
 //----- (0000000000407BA5) ----------------------------------------------------
@@ -150,20 +153,18 @@ int aml_set_sn (char *target_device, char *usid) {
     if (!device) {
         return -1;
     }
-
     char buffer[8];
-    struct AmlUsbRomRW rom = { .device = device,.bufferLen = 4,.buffer = buffer };
-
+    struct AmlUsbRomRW rom = {};
+    rom.bufferLen = 4;
+    rom.buffer = buffer;
     if (AmlUsbIdentifyHost(&rom)) {
         device = nullptr;
         return -1;
     }
-
     if (buffer[3] != '\x10') {
         device = nullptr;
         return -1;
     }
-
     char cmd[256];
     char src[256];
     sprintf(cmd, "efuse write usid %s", usid);
@@ -172,7 +173,6 @@ int aml_set_sn (char *target_device, char *usid) {
         device = nullptr;
         return -1;
     }
-
     char dest[256] = {};
     char tmp1[256] = {};
     char tmp2[256] = {};
@@ -182,7 +182,6 @@ int aml_set_sn (char *target_device, char *usid) {
     if (strcmp(tmp1, "success") != 0) {
         return 0;
     }
-
     device = nullptr;
-    return strlen(tmp2);
+    return (int)strlen(tmp2);
 }

@@ -23,10 +23,7 @@ namespace AmlUsbWriteLargeMem {
         if (ValidParamVOID(rom->buffer) != 1) {
             return -3;
         }
-
         struct AmlUsbDrv drv = {};
-        drv.device = rom->device;
-
         if (OpenUsbDevice(&drv) != 1) {
             return -4;
         }
@@ -91,14 +88,11 @@ namespace AmlUsbReadLargeMem {
         if (ValidParamVOID(rom->buffer) != 1) {
             return -3;
         }
-
         ++AmlUsbReadLargeMem::ReadSeqNum;
         struct AmlUsbDrv drv = {};
-        drv.device = rom->device;
         if (OpenUsbDevice(&drv) != 1) {
             return -4;
         }
-
         unsigned int bufferPtr = 0;
         int startTransfer = -1;
         int transferErrorCnt = 0;
@@ -147,7 +141,6 @@ namespace AmlUsbReadLargeMem {
 
 int AmlUsbReadMemCtr (AmlUsbRomRW *rom) {
     struct AmlUsbDrv drv = {};
-    drv.device = rom->device;
     if (OpenUsbDevice(&drv) == 0) {
         return 0;
     }
@@ -171,7 +164,6 @@ int AmlUsbReadMemCtr (AmlUsbRomRW *rom) {
 
 int AmlUsbWriteMemCtr (AmlUsbRomRW *rom) {
     struct AmlUsbDrv drv = {};
-    drv.device = rom->device;
     if (OpenUsbDevice(&drv) == 0) {
         return 0;
     }
@@ -194,7 +186,6 @@ int AmlUsbWriteMemCtr (AmlUsbRomRW *rom) {
 
 int AmlUsbRunBinCode (AmlUsbRomRW *rom) {
     struct AmlUsbDrv drv = {};
-    drv.device = rom->device;
     aml_printf("AmlUsbRunBinCode:ram_addr=%08x\n", rom->address);
     if (OpenUsbDevice(&drv) == 0) {
         return -1;
@@ -208,9 +199,6 @@ int AmlUsbRunBinCode (AmlUsbRomRW *rom) {
 
 int AmlUsbIdentifyHost (AmlUsbRomRW *rom) {
     struct AmlUsbDrv drv = {};
-    drv.device = rom->device;
-
-
     aml_printf("AmlUsbIdentifyHost\n");
     if (OpenUsbDevice(&drv) == 0) {
         return -1;
@@ -224,14 +212,10 @@ int AmlUsbIdentifyHost (AmlUsbRomRW *rom) {
 
 int AmlUsbTplCmd (AmlUsbRomRW *rom) {
     struct AmlUsbDrv drv = {};
-    drv.device = rom->device;
-
-
     aml_printf("AmlUsbTplCmd = %s ", rom->buffer);
     if (OpenUsbDevice(&drv) == 0) {
         return -1;
     }
-
     int ret = usbDeviceIoControl(&drv, 0x80002040, rom->buffer, rom->bufferLen, nullptr, 0,
         rom->pDataSize, nullptr);
     aml_printf("rettemp = %d buffer = %s\n", ret, rom->buffer);
@@ -286,8 +270,6 @@ int AmlUsbburn (struct usb_device *device, const char *filename, unsigned int ad
 
 int AmlUsbReadStatus (AmlUsbRomRW *rom) {
     struct AmlUsbDrv drv = {};
-    drv.device = rom->device;
-
     aml_printf("AmlUsbReadStatus ");
     if (OpenUsbDevice(&drv) != 1) {
         return -1;
@@ -302,8 +284,6 @@ int AmlUsbReadStatus (AmlUsbRomRW *rom) {
 
 int AmlUsbReadStatusEx (AmlUsbRomRW *rom, unsigned int timeout) {
     struct AmlUsbDrv drv = {};
-    drv.device = rom->device;
-
     aml_printf("AmlUsbReadStatus ");
     if (OpenUsbDevice(&drv) != 1) {
         return -1;
@@ -320,10 +300,7 @@ int AmlResetDev (AmlUsbRomRW *rom) {
     if (!rom->device) {
         return -1;
     }
-
     struct AmlUsbDrv drv = {};
-    drv.device = rom->device;
-
     if (OpenUsbDevice(&drv) != 1) { return 2; }
 
     aml_printf("reset worldcup device\n");
@@ -353,11 +330,7 @@ int AmlSetFileCopyCompleteEx (AmlUsbRomRW *rom) {
 int AmlWriteMedia (AmlUsbRomRW *rom) {
     int result = 0;
     unsigned int checksum = 0;
-
     struct AmlUsbDrv drv = {};
-    drv.device = rom->device;
-
-
     if (ValidParamDWORD(&rom->bufferLen) != 1) {
         return -1;
     }
@@ -435,8 +408,6 @@ int AmlWriteMedia (AmlUsbRomRW *rom) {
 
 int AmlReadMedia (AmlUsbRomRW *rom) {
     struct AmlUsbDrv drv = {};
-    drv.device = rom->device;
-
 //  unsigned char buf[200] = {};
     unsigned int len = rom->bufferLen;
     unsigned int read = 0;
@@ -484,7 +455,6 @@ int AmlReadMedia (AmlUsbRomRW *rom) {
 
 int AmlUsbBulkCmd (AmlUsbRomRW *rom) {
     AmlUsbDrv drv = {};
-    drv.device = rom->device;
     drv.read_ep = 2;
     if (OpenUsbDevice(&drv) == 0) {
         aml_printf("[AmlUsbRom]Err:");
@@ -530,8 +500,7 @@ int AmlUsbBulkCmd (AmlUsbRomRW *rom) {
 
 int AmlUsbCtrlWr (AmlUsbRomRW *rom) {
     AmlUsbDrv drv = {};
-    drv.device = rom->device,
-        drv.read_ep = 2;
+    drv.read_ep = 2;
     if (OpenUsbDevice(&drv) != 1) {
         return -1;
     }

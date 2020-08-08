@@ -21,9 +21,6 @@
     <ClCompile Include="..\UsbRomDrv.cpp">
       <Filter>aml</Filter>
     </ClCompile>
-    <ClCompile Include="..\pozix\mem.c">
-      <Filter>pozix</Filter>
-    </ClCompile>
     <ClCompile Include="..\pozix\nanotime.c">
       <Filter>pozix</Filter>
     </ClCompile>
@@ -31,6 +28,12 @@
       <Filter>pozix</Filter>
     </ClCompile>
     <ClCompile Include="..\pozix\pthreads.c">
+      <Filter>pozix</Filter>
+    </ClCompile>
+    <ClCompile Include="..\pozix\muldiv128.c">
+      <Filter>pozix</Filter>
+    </ClCompile>
+    <ClCompile Include="..\pozix\debug.c">
       <Filter>pozix</Filter>
     </ClCompile>
   </ItemGroup>
@@ -71,6 +74,10 @@
       <Filter>pozix</Filter>
     </ClInclude>
     <ClInclude Include="..\pozix\debug.h">
+      <Filter>pozix</Filter>
+    </ClInclude>
+    <ClInclude Include="..\defs.h" />
+    <ClInclude Include="..\pozix\muldiv128.h">
       <Filter>pozix</Filter>
     </ClInclude>
   </ItemGroup>

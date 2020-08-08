@@ -1,6 +1,9 @@
 #include "AmlLibusb.h"
 #include "Amldbglog.h"
 #include "defs.h"
+#include "pozix.h"
+
+#pragma warning(disable: 4100) // unreferenced formal parameter
 
 usbio_file_t handle;
 
@@ -35,6 +38,14 @@ usbio_file_t handle;
 #define USB_ENDPOINT_OUT 0x00
 
 int usb_control_msg(usbio_file_t file, int requesttype, int request, int value, int index, char *bytes, int size, int timeout) {
+    return -1;
+}
+
+int usb_bulk_read(usbio_file_t file, int ep, char *bytes, int size, int timeout) {
+    return -1;
+}
+
+int usb_bulk_write(usbio_file_t file, int ep, char *bytes, int size, int timeout) {
     return -1;
 }
 
@@ -113,7 +124,7 @@ int IOCTL_DO_LARGE_MEM_Handler (usbDevIoCtrl ctrl, int readOrWrite) {
     if (value == 0 || value > 4096) {
         value = 4096;
     }
-    unsigned long len = LONG_AT(ctrl.in_buf, 4);
+    uint64_t len = LONG_AT(ctrl.in_buf, 4);
     unsigned int index = (unsigned int)(value + len - 1) / value;
     int ret = usb_control_msg(handle, USB_ENDPOINT_OUT | USB_TYPE_VENDOR,
         readOrWrite ? AML_LIBUSB_REQ_READ_MEM
@@ -212,7 +223,7 @@ int IOCTL_READ_MEDIA_Handler (usbDevIoCtrl ctrl, unsigned int timeout) {
     if (!value || value > 0x1000) {
         value = 4096;
     }
-    unsigned long len = LONG_AT(ctrl.in_buf, 4);
+    uint64_t len = LONG_AT(ctrl.in_buf, 4);
     unsigned int index = (unsigned int)(value + len - 1) / value;
     int ret = usb_control_msg(handle, USB_ENDPOINT_IN | USB_TYPE_VENDOR,
         AML_LIBUSB_REQ_READ_MEDIA, value, index, ctrl.in_buf, 16,
@@ -242,16 +253,17 @@ int IOCTL_BULK_CMD_Handler (usbDevIoCtrl ctrl, unsigned int a1, unsigned int req
 int usbDeviceIoControl (AmlUsbDrv *drv, unsigned int control_code, void *in_buf,
     unsigned int in_len, void *out_buf, unsigned int out_len,
     unsigned int *in_data_size, unsigned int *out_data_size) {
-    if (drv->device == (struct usb_device *) - 1) {
-        aml_printf("hDevice == INVALID_HANDLE_VALUE\n");
-        return 0;
-    }
-
-    usbDevIoCtrl ctrl = { .handle = drv
-        ->handle,.in_buf = (char *)in_buf,.out_buf = (char *)out_buf,.in_len = in_len,.out_len = out_len,.p_in_data_size = in_data_size,.p_out_data_size = out_data_size };
-    usbDevIo v18 = { .a = 1,.b = 0,.device = drv->device };
+    usbDevIoCtrl ctrl = {};
+    ctrl.in_buf  = (char*)in_buf;
+    ctrl.out_buf = (char*)out_buf;
+    ctrl.in_len = in_len;
+    ctrl.out_len = out_len;
+    ctrl.p_in_data_size = in_data_size;
+    ctrl.p_out_data_size = out_data_size;
+    usbDevIo v18 = {};
+    v18.a = 1;
+    v18.b = 0;
     int readOrWrite = 0;
-
     switch (control_code) {
     case 0x80002000:
         return IOCTL_READ_MEM_Handler(ctrl);
@@ -286,15 +298,16 @@ int usbDeviceIoControlEx (AmlUsbDrv *drv, unsigned int controlCode, void *in_buf
     unsigned int in_len, void *out_buf, unsigned int out_len,
     unsigned int *in_data_size, unsigned int *out_data_size,
     unsigned int timeout) {
-    if (drv->device == (struct usb_device *) - 1LL) {
-        aml_printf("hDevice == INVALID_HANDLE_VALUE\n");
-        return 0;
-    }
-
-    usbDevIoCtrl ctrl = { .handle = drv
-        ->handle,.in_buf = (char *)in_buf,.out_buf = (char *)out_buf,.in_len = in_len,.out_len = out_len,.p_in_data_size = in_data_size,.p_out_data_size = out_data_size };
-    usbDevIo v18 = { .a = 1,.b = 0,.device = drv->device };
-
+    usbDevIoCtrl ctrl = {};
+    ctrl.in_buf = (char*)in_buf;
+    ctrl.out_buf = (char *)out_buf;
+    ctrl.in_len = in_len;
+    ctrl.out_len = out_len;
+    ctrl.p_in_data_size = in_data_size;
+    ctrl.p_out_data_size = out_data_size;
+    usbDevIo v18 = {};
+    v18.a = 1;
+    v18.b = 0;
     switch (controlCode) {
     case 0x80002004:
         return IOCTL_WRITE_MEM_Handler(ctrl);
@@ -315,11 +328,7 @@ int usbDeviceIoControlEx (AmlUsbDrv *drv, unsigned int controlCode, void *in_buf
 }
 
 int usbReadFile (AmlUsbDrv *drv, void *buf, unsigned int len, unsigned int *read) {
-    if (drv->device == (struct usb_device *) - 1) {
-        return 0;
-    }
-
-    int ret = usb_bulk_read(drv->handle, drv->read_ep, (char *)buf, len, 90000);
+    int ret = usb_bulk_read(handle, drv->read_ep, (char *)buf, len, 90000);
     *read = (unsigned int)max(0, ret);
     if (ret < 0) {
         aml_printf("usbReadFile len=%d,ret=%d error_msg=%s\n", len, ret, usb_strerror());
@@ -328,11 +337,7 @@ int usbReadFile (AmlUsbDrv *drv, void *buf, unsigned int len, unsigned int *read
 }
 
 int usbWriteFile (AmlUsbDrv *drv, const void *buf, unsigned int len, unsigned int *read) {
-    if (drv->device == (struct usb_device *) - 1) {
-        return 0;
-    }
-
-    int ret = usb_bulk_write(drv->handle, drv->write_ep, (char *)buf, len, 50000);
+    int ret = usb_bulk_write(handle, drv->write_ep, (char *)buf, len, 50000);
     *read = (unsigned int)max(0, ret);
     if (ret < 0) {
         aml_printf("usbWriteFile len=%d,ret=%d error_msg=%s\n", len, ret, usb_strerror());
@@ -341,54 +346,36 @@ int usbWriteFile (AmlUsbDrv *drv, const void *buf, unsigned int len, unsigned in
 }
 
 int OpenUsbDevice (AmlUsbDrv *drv) {
-    if (drv && drv->device && !drv->handle) {
-        drv->handle = usb_open(drv->device);
-        drv->read_ep = (char)0x81;
-        drv->write_ep = 2;
-        return 1;
-    } else {
-        aml_printf("%s L%d bug %#x %#x %#x\n", "OpenUsbDevice", 572LL, drv,
-            drv ? drv->device : nullptr, drv ? drv->handle : nullptr);
-        return 0;
-    }
+    int r = usbio_open(AML_ID_VENDOR, AML_ID_PRODUCE, &handle, 1);
+    assert(r == 0);
+    drv->read_ep = (unsigned char)0x81;
+    drv->write_ep = 2;
+    return r == 0;
 }
 
 int CloseUsbDevice (AmlUsbDrv *drv) {
-    if (drv && drv->device) {
-        usb_close(drv->handle);
-        drv->handle = nullptr;
-        return 1;
-    } else {
-        aml_printf("%s L%d bug %#x %#x %#x\n", "CloseUsbDevice", 592LL, drv,
-            drv ? drv->device : nullptr, drv ? drv->handle : nullptr);
-        return 0;
-    }
+    int r = usbio_close(handle);
+    assert(r == 0);
+    return r == 0;
 }
 
 int ResetDev (AmlUsbDrv *drv) {
-    if (drv->device == (struct usb_device *) - 1) {
-        return 0;
-    }
-
-    aml_printf("Reset WorldCup Device\n");
-    return usb_reset(drv->handle);
+    return 0;
 }
 
 // Control Read/Write
 // Read = 1
 int Aml_Libusb_Ctrl_RdWr (void *device, unsigned int offset, char *buf, unsigned int len,
     unsigned int readOrWrite, unsigned int timeout) {
-    struct AmlUsbDrv drv = { .device = (struct usb_device *) device };
-
+    struct AmlUsbDrv drv = {};
     if (OpenUsbDevice(&drv) != 1) {
         aml_printf("Fail in open dev\n");
         return -647;
     }
-
     int processedData = 0;
-    while (processedData < len) {
+    while (processedData < (int)len) {
         int requestLen = min(len - processedData, 64u);
-        usb_control_msg(drv.handle,
+        usb_control_msg(handle,
             readOrWrite ? USB_ENDPOINT_IN | USB_TYPE_VENDOR : USB_TYPE_VENDOR,
             readOrWrite ? AML_LIBUSB_REQ_READ_CTRL : AML_LIBUSB_REQ_WRITE_CTRL,
             offset >> 16, offset, buf, requestLen, timeout);
@@ -401,45 +388,39 @@ int Aml_Libusb_Ctrl_RdWr (void *device, unsigned int offset, char *buf, unsigned
 }
 
 int Aml_Libusb_Password (void *device, char *buf, int size, int timeout) {
-    struct AmlUsbDrv drv = { .device = (struct usb_device *) device };
-
+    struct AmlUsbDrv drv = {};
     if (OpenUsbDevice(&drv) != 1) {
         aml_printf("Fail in open dev\n");
         return -698;
     }
-
     if (size > 64) {
         aml_printf("f(%s)size(%d) too large, cannot support it.\n", "Aml_Libusb_Password",
             size);
         return -705;
     }
-
     int bufPtr = 0;
     int value = 0;
     while (bufPtr < size) {
         value += buf[bufPtr++];
     }
-    int result = usb_control_msg(drv.handle, USB_ENDPOINT_OUT | USB_TYPE_VENDOR,
+    int result = usb_control_msg(handle, USB_ENDPOINT_OUT | USB_TYPE_VENDOR,
         AML_LIBUSB_REQ_PASSWORD, value, 0, buf, size, timeout);
     CloseUsbDevice(&drv);
     return result;
 }
 
 int Aml_Libusb_get_chipinfo (void *device, char *buf, int size, int index, int timeout) {
-    struct AmlUsbDrv drv = { .device = (struct usb_device *) device };
-
+    struct AmlUsbDrv drv = {};
     if (OpenUsbDevice(&drv) != 1) {
         aml_printf("Fail in open dev\n");
         return -750;
     }
-
     if (size > 64) {
         aml_printf("f(%s)size(%d) too large, cannot support it.\n", "Aml_Libusb_get_chipinfo",
             (unsigned int)size);
         return -757;
     }
-
-    int ret = usb_control_msg(drv.handle, USB_ENDPOINT_IN | USB_TYPE_VENDOR,
+    int ret = usb_control_msg(handle, USB_ENDPOINT_IN | USB_TYPE_VENDOR,
         AML_LIBUSB_REQ_CHIP_INFO, 0, index, buf, size, timeout);
     CloseUsbDevice(&drv);
     return ret;

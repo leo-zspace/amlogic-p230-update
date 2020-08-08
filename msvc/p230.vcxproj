@@ -16,7 +16,8 @@
     <ClCompile Include="..\AmlTime.c" />
     <ClCompile Include="..\AmlUsbScan.cpp" />
     <ClCompile Include="..\AmlUsbScanX3.cpp" />
-    <ClCompile Include="..\pozix\mem.c" />
+    <ClCompile Include="..\pozix\debug.c" />
+    <ClCompile Include="..\pozix\muldiv128.c" />
     <ClCompile Include="..\pozix\nanotime.c" />
     <ClCompile Include="..\pozix\pozix.c" />
     <ClCompile Include="..\pozix\pthreads.c" />
@@ -30,8 +31,10 @@
     <ClInclude Include="..\AmlTime.h" />
     <ClInclude Include="..\AmlUsbScan.h" />
     <ClInclude Include="..\AmlUsbScanX3.h" />
+    <ClInclude Include="..\defs.h" />
     <ClInclude Include="..\pozix\array_set.h" />
     <ClInclude Include="..\pozix\debug.h" />
+    <ClInclude Include="..\pozix\muldiv128.h" />
     <ClInclude Include="..\pozix\nanotime.h" />
     <ClInclude Include="..\pozix\pozix.h" />
     <ClInclude Include="..\pozix\pthreads.h" />

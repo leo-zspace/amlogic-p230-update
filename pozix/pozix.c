@@ -589,12 +589,12 @@ void disable_dll_loading_thread_pool() {
 int disinherit_handle(HANDLE h) {
     DWORD flags = 0;
     int r = GetHandleInformation(h, &flags) ? 0 : GetLastError();
-    if (r != 0) { log_err("GetHandleInformation(%p) failed %s", h, strerr(r)); }
+    if (r != 0) { trace("GetHandleInformation(%p) failed %s", h, strerr(r)); }
     if (r == 0) {
-        //      if (flags & HANDLE_FLAG_INHERIT) { log_info("%p flags=0x%08X (HANDLE_FLAG_INHERIT)", h, flags); }
-        //      if (flags & HANDLE_FLAG_PROTECT_FROM_CLOSE) { log_info("%p flags=0x%08X (HANDLE_FLAG_PROTECT_FROM_CLOSE)", h, flags); }
+//      if (flags & HANDLE_FLAG_INHERIT) { log_info("%p flags=0x%08X (HANDLE_FLAG_INHERIT)", h, flags); }
+//      if (flags & HANDLE_FLAG_PROTECT_FROM_CLOSE) { log_info("%p flags=0x%08X (HANDLE_FLAG_PROTECT_FROM_CLOSE)", h, flags); }
         r = SetHandleInformation(h, HANDLE_FLAG_INHERIT | HANDLE_FLAG_PROTECT_FROM_CLOSE, 0) ? 0 : GetLastError();
-        if (r != 0) { log_err("SetHandleInformation(%p) failed %s", h, strerr(r)); }
+        if (r != 0) { trace("SetHandleInformation(%p) failed %s", h, strerr(r)); }
     }
     return r;
 }

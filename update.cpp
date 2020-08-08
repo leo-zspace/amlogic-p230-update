@@ -1,14 +1,16 @@
 #include "update.h"
-//#include "AmlTime.h"
-//#include "Amldbglog/Amldbglog.h"
-//#include "AmlUsbScanX3/AmlUsbScanX3.h"
-//#include "UsbRomDrv/UsbRomDrv.h"
-//#include "AmlUsbScan/AmlUsbScan.h"
-//#include "defs.h"
+#include "AmlTime.h"
+#include "Amldbglog.h"
+#include "AmlUsbScanX3.h"
+#include "UsbRomDrv.h"
+#include "AmlUsbScan.h"
+#include "defs.h"
 
 #ifdef _MSC_VER
 #define fseeko64(fp, ofs, origin) _fseeki64(fp, ofs, origin)
 #define ftello(fp) _ftelli64(fp)
+typedef uint64_t off_t;
+#pragma warning(disable: 4018)
 #endif
 
 /*
@@ -45,7 +47,7 @@ unsigned int _parse_integer (const char *s, unsigned int base, unsigned long *p)
     rv = 0;
     while (true) {
         unsigned int c = *(unsigned char *)s;
-        unsigned int lc = c | 0x20; /// don't tolower() this line 
+        unsigned int lc = c | 0x20; /// don't tolower() this line
         unsigned int val;
         if ('0' <= c && c <= '9') {
             val = c - '0';
@@ -81,7 +83,7 @@ unsigned long simple_strtoul (const char *cp, char **endp, unsigned int base) {
 
 unsigned long strtoul(const char* text) {
     unsigned long r = 0;
-    if (memcmp(text, "0x") == 0 || memcmp(text, "0X") == 0) { 
+    if (memcmp(text, "0x", 2) == 0 || memcmp(text, "0X", 2) == 0) {
         sscanf(text + 2, "%x", &r);
         return r;
     } else {
@@ -228,8 +230,8 @@ int do_cmd_mwrtie (const char **argv, signed int argc, AmlUsbRomRW &rom) {
         return -252;
     }
 
-    snprintf((char *)buffer, sizeof(buffer), "download %s %s %s 0x%lx", storeOrMem,
-        partition, fileType, fileSize);
+    snprintf((char *)buffer, sizeof(buffer), "download %s %s %s 0x%llx", storeOrMem,
+        partition, fileType, (long long)fileSize);
     buffer[66] = 1;
     rom.buffer = buffer;
     rom.bufferLen = 68;
@@ -388,7 +390,7 @@ int update_sub_cmd_run_and_rreg (AmlUsbRomRW &rom, const char *cmd, const char *
     return ret;
 }
 
-int update_sub_cmd_set_password (AmlUsbRomRW &rom, const char **argv, int argc) {
+int update_sub_cmd_set_password (AmlUsbRomRW &rom, const char **argv, int argc) { (void)argc;
     const char *pwdFile = argv[0];
     FILE *fp = fopen(pwdFile, "rb");
     if (!fp) {
@@ -420,7 +422,7 @@ int update_sub_cmd_set_password (AmlUsbRomRW &rom, const char **argv, int argc) 
     fclose(fp);
     int ret = 0;
     for (int i = 0; i <= 1 && (ret & 0x80000000) == 0; ++i) {
-        ret = Aml_Libusb_Password(rom.device, &ptr, rdLen, 8000);
+        ret = Aml_Libusb_Password(rom.device, &ptr, (int)rdLen, 8000);
         if (!i) {
             printf("Setting PWD..");
             usleep(5000000);
@@ -564,8 +566,8 @@ int update_sub_cmd_read_write (AmlUsbRomRW &rom, const char *cmd, const char **a
             }
 
             if (dumpFp) {
-                dumpFileSize = fwrite(buffer, 1, dataLen, dumpFp);
-                if (dumpFileSize != dataLen) {
+                dumpFileSize = (unsigned int)fwrite(buffer, 1, dataLen, dumpFp);
+                if ((int)dumpFileSize != dataLen) {
                     aml_printf("[update]ERR(L%d):", 639);
                     aml_printf("Want to write %dB to path[%s], but only %dB\n", dataLen,
                         dumpFilename, dumpFileSize);
@@ -704,7 +706,7 @@ int update_sub_cmd_identify_host (AmlUsbRomRW &rom, int idLen, char *id) {
     return 0;
 }
 
-int update_sub_cmd_get_chipid (AmlUsbRomRW &rom, const char **argv) {
+int update_sub_cmd_get_chipid (AmlUsbRomRW &rom, const char **argv) { (void)argv;
     char id[16];
 
     int ret = update_sub_cmd_identify_host(rom, 4, id);
@@ -781,12 +783,17 @@ int update_sub_cmd_tplcmd (AmlUsbRomRW &rom, const char *tplCmd) {
 
     memcpy(dest, tplCmd, strlen(tplCmd) + 1);
     dest[66] = 1;
-    AmlUsbRomRW cmd = { .device = rom
-        .device,.bufferLen = 68,.buffer = dest,.pDataSize = &dataSize };
+    AmlUsbRomRW cmd = {};
+    cmd.device = rom.device;
+    cmd.bufferLen = 68;
+    cmd.buffer = dest;
+    cmd.pDataSize = &dataSize;
     if (AmlUsbTplCmd(&cmd) == 0) {
         char reply[64] = {};
-        AmlUsbRomRW cmd = { .device = rom.device,.bufferLen = 64,.buffer = reply };
-
+        memset(&cmd, 0, sizeof(cmd));
+        cmd.device = rom.device;
+        cmd.bufferLen = 64;
+        cmd.buffer = reply;
         for (int retry = 5; retry > 0; --retry) {
             if (AmlUsbReadStatus(&cmd) == 0) {
                 printf("reply %s \n", reply);
@@ -807,14 +814,14 @@ int update_sub_cmd_mread (AmlUsbRomRW &rom, int argc, const char **argv) {
     const char *storeOrMem = argv[0];
     const char *partition = argv[1];
     const char *filetype = argv[2];
-    long readSize = strtoll(argv[3], nullptr, 0);
+    int64_t readSize = strtoll(argv[3], nullptr, 0);
     if (strcmp("normal", filetype) != 0 || !readSize) {
         aml_printf("Err args in mread: check filetype and readSize\n");
         return 968;
     }
 
     char buffer[128] = {};
-    snprintf((char *)buffer, sizeof(buffer), "upload %s %s %s 0x%lx", storeOrMem,
+    snprintf((char *)buffer, sizeof(buffer), "upload %s %s %s 0x%llx", storeOrMem,
         partition, filetype, readSize);
     buffer[66] = 1;
     rom.buffer = buffer;
@@ -883,26 +890,23 @@ int main (int argc, const char **argv) {
 
     // find dev no
     if (argc > 2) {
-        std::string strArgDev(argv[2]);
-        if (strArgDev.compare(0, 3, "dev") == 0) {
-            if (strArgDev.length() > 5) {
+        const char* strArgDev = argv[2];
+        if (memcmp(strArgDev, "dev", 3) == 0) {
+            if (strlen(strArgDev) > 5) {
                 aml_printf("[update]ERR(L%d):", 1062);
-                aml_printf("devPara(%s) err\n", strArgDev.c_str());
+                aml_printf("devPara(%s) err\n", strArgDev);
                 goto finish;
             }
-
-            dev_no = strtol(strArgDev.substr(3, -1).c_str(), nullptr, 10);
+            dev_no = strtol(strArgDev + 3, nullptr, 10);
             if (dev_no > 16) {
                 aml_printf("[update]ERR(L%d):", 1068);
                 aml_printf("dev_no(%d) too large\n", dev_no);
                 goto finish;
             }
-
             cmdArgv = argv + 3;
-        } else if (strArgDev.compare(0, 5, "path-") == 0) {
-            aml_printf("[update]devPath is [%s]\n", strArgDev.substr(5, -1).c_str());
-            rom.device = AmlGetDeviceHandle("WorldCup Device",
-                (char *)strArgDev.substr(5, -1).c_str());
+        } else if (memcmp(strArgDev, "path-", 5) == 0) {
+            aml_printf("[update]devPath is [%s]\n", strArgDev + 5);
+            rom.device = AmlGetDeviceHandle("WorldCup Device", (char*)strArgDev + 5);
         } else {
             dev_no = 0;
             cmdArgv = argv + 2;
@@ -975,7 +979,7 @@ int main (int argc, const char **argv) {
                 char yesno;
                 printf("if you want input cmd \"%s\" (Y/N): ", s1);
                 scanf("%c", &yesno);
-                if (strncasecmp(&yesno, "y", 1) != 0) {
+                if (yesno != 'y' && yesno != 'Y') {
                     goto finish;
                 }
             }
@@ -1048,7 +1052,10 @@ int main (int argc, const char **argv) {
 
     if (!strcmp(cmd, "tplstat")) {
         char buffer[64] = {};
-        AmlUsbRomRW rom = { .device = rom.device,.bufferLen = 64,.buffer = buffer };
+        AmlUsbRomRW rom = {};
+        rom.device = rom.device;
+        rom.bufferLen = 64;
+        rom.buffer = buffer;
         if (AmlUsbReadStatus(&rom) == 0) {
             printf("reply %s \n", buffer);
         } else {
@@ -1134,8 +1141,11 @@ int main (int argc, const char **argv) {
         memcpy(buffer, dest, strlen(dest));
         buffer[66] = 1;
         unsigned int v25;
-        AmlUsbRomRW rom = { .device = rom
-            .device,.bufferLen = 68,.buffer = buffer,.pDataSize = &v25 };
+        AmlUsbRomRW rom = {};
+        rom.device = rom.device;
+        rom.bufferLen = 68;
+        rom.buffer = buffer;
+        rom.pDataSize = &v25;
         result = 0;
         if (AmlUsbBulkCmd(&rom) != 0) {
             puts("ERR: AmlUsbBulkCmd failed!");

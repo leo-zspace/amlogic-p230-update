@@ -22,8 +22,8 @@ struct usbDevIo {
 };
 
 struct AmlUsbDrv {
-    char read_ep;
-    char write_ep;
+    unsigned char read_ep;
+    unsigned char write_ep;
 };
 
 enum AmlUsbRequest {
