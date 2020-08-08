@@ -1,0 +1,85 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="..\update.cpp" />
+    <ClCompile Include="..\usbio_win.c" />
+    <ClCompile Include="..\Amldbglog.cpp">
+      <Filter>aml</Filter>
+    </ClCompile>
+    <ClCompile Include="..\AmlLibusb.cpp">
+      <Filter>aml</Filter>
+    </ClCompile>
+    <ClCompile Include="..\AmlTime.c">
+      <Filter>aml</Filter>
+    </ClCompile>
+    <ClCompile Include="..\AmlUsbScan.cpp">
+      <Filter>aml</Filter>
+    </ClCompile>
+    <ClCompile Include="..\AmlUsbScanX3.cpp">
+      <Filter>aml</Filter>
+    </ClCompile>
+    <ClCompile Include="..\UsbRomDrv.cpp">
+      <Filter>aml</Filter>
+    </ClCompile>
+    <ClCompile Include="..\pozix\mem.c">
+      <Filter>pozix</Filter>
+    </ClCompile>
+    <ClCompile Include="..\pozix\nanotime.c">
+      <Filter>pozix</Filter>
+    </ClCompile>
+    <ClCompile Include="..\pozix\pozix.c">
+      <Filter>pozix</Filter>
+    </ClCompile>
+    <ClCompile Include="..\pozix\pthreads.c">
+      <Filter>pozix</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\update.h" />
+    <ClInclude Include="..\usbio.h" />
+    <ClInclude Include="..\Amldbglog.h">
+      <Filter>aml</Filter>
+    </ClInclude>
+    <ClInclude Include="..\AmlLibusb.h">
+      <Filter>aml</Filter>
+    </ClInclude>
+    <ClInclude Include="..\AmlTime.h">
+      <Filter>aml</Filter>
+    </ClInclude>
+    <ClInclude Include="..\AmlUsbScan.h">
+      <Filter>aml</Filter>
+    </ClInclude>
+    <ClInclude Include="..\AmlUsbScanX3.h">
+      <Filter>aml</Filter>
+    </ClInclude>
+    <ClInclude Include="..\UsbRomDrv.h">
+      <Filter>aml</Filter>
+    </ClInclude>
+    <ClInclude Include="..\pozix\array_set.h">
+      <Filter>pozix</Filter>
+    </ClInclude>
+    <ClInclude Include="..\pozix\pozix.h">
+      <Filter>pozix</Filter>
+    </ClInclude>
+    <ClInclude Include="..\pozix\runtime.h">
+      <Filter>pozix</Filter>
+    </ClInclude>
+    <ClInclude Include="..\pozix\nanotime.h">
+      <Filter>pozix</Filter>
+    </ClInclude>
+    <ClInclude Include="..\pozix\pthreads.h">
+      <Filter>pozix</Filter>
+    </ClInclude>
+    <ClInclude Include="..\pozix\debug.h">
+      <Filter>pozix</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="aml">
+      <UniqueIdentifier>{560449b5-24cb-4185-b998-9c79cfc2ed38}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="pozix">
+      <UniqueIdentifier>{7e072265-b488-4769-aafa-0f340e82fd07}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

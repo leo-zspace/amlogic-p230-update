@@ -1,15 +1,21 @@
-#ifndef DEFS_H
-#define DEFS_H
+#pragma once
 
-template <typename T>
-inline T const &max (T const &a, T const &b) {
-  return a < b ? b : a;
-}
+// assuming Windows are running on little endian platform (x86/x64):
 
-template <typename T>
-inline T const &min (T const &a, T const &b) {
-  return a > b ? b : a;
-}
+#define htobe16(x) _byteswap_ushort(x)
+#define htole16(x) (x)
+#define be16toh(x) _byteswap_ushort(x)
+#define le16toh(x) (x)
+     	
+#define htobe32(x) _byteswap_ulong(x)
+#define htole32(x) (x)
+#define be32toh(x) _byteswap_ulong(x)
+#define le32toh(x) (x)
+     	
+#define htobe64(x) _byteswap_uint64(x)
+#define htole64(x) (x)
+#define be64toh(x) _byteswap_uint64(x)
+#define le64toh(x) (x)
 
 #define TYPE_AT(type, base, offset) (*(type*)((char*)(base) + (offset)))
 
@@ -23,4 +29,3 @@ inline T const &min (T const &a, T const &b) {
 #define SET_INT_AT(base, offset, value) (TYPE_AT(int, base, offset) = htole32(value))
 #define SET_LONG_AT(base, offset, value) (TYPE_AT(long long, base, offset) = htole64(value))
 
-#endif //DEFS_H

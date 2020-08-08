@@ -1,28 +1,23 @@
-#include <string>
-
 #include "UsbRomDrv/UsbRomDrv.h"
 
 #define AML_CHIP_ID_LEN 12
 
 struct DownloadProgressInfo {
-  long nBytes;  // in bytes
-  int percentage_0;
-  int percentage_100;
-  unsigned int percentage_100_remain;
-  int percentage;
-  long nBytesDownloaded;
-  int startTime;
-  int total_div_100;
-  unsigned int max_4k_total_div_100;
-  int max_1_4k_div_total_mul_100;
-  char prompt[16];
-
-  DownloadProgressInfo (long long total_, const char *prompt_);
-  int update_progress (unsigned int dataLen);
+    long nBytes;  // in bytes
+    int percentage_0;
+    int percentage_100;
+    unsigned int percentage_100_remain;
+    int percentage;
+    long nBytesDownloaded;
+    int startTime;
+    int total_div_100;
+    unsigned int max_4k_total_div_100;
+    int max_1_4k_div_total_mul_100;
+    char prompt[16];
+    DownloadProgressInfo (long long total_, const char *prompt_);
+    int update_progress (unsigned int dataLen);
 };
 
-std::string strToLower (const std::string &src);
-unsigned long simple_strtoul(const char *cp, char **endp, unsigned int base);
 int _print_memory_view(char *buf, unsigned int size, unsigned int offset);
 int update_help();
 int update_scan(void **resultDevices, int print_dev_list, unsigned int dev_no, int *success, char *scan_mass_storage);

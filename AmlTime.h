@@ -1,17 +1,17 @@
-#ifndef AML_TIME_H
-#define AML_TIME_H
+#pragma once
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#include <sys/time.h>
+time_t timeGetTime(void);
 
-time_t timeGetTime (void);
-time_t GetTickCount (void);
+time_t get_tick_count(void);
+
+#ifdef _MSC_VER
+void usleep(__int64 usec);
+#endif
 
 #ifdef __cplusplus
 }
 #endif
-
-#endif  // AML_TIME_H

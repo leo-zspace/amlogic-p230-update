@@ -1,5 +1,4 @@
-#ifndef AML_USB_SCNA_H
-#define AML_USB_SCNA_H
+#pragma once
 
 bool simg_probe (const unsigned char *buf, unsigned int len);
 bool is_file_format_sparse (const char *filename);
@@ -10,4 +9,3 @@ int aml_send_command(void *device, char *mem_type, int retry, char *reply);
 int aml_get_sn (char *target_device, char *usid);
 int aml_set_sn (char *target_device, char *usid);
 
-#endif //AML_USB_SCNA_H
