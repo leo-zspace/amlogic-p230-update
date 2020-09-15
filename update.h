@@ -15,12 +15,12 @@ struct DownloadProgressInfo {
     int max_1_4k_div_total_mul_100;
     char prompt[16];
     DownloadProgressInfo (long long total_, const char *prompt_);
-    int update_progress (unsigned int dataLen);
+    int update_progress(int dataLen);
 };
 
 int _print_memory_view(char *buf, unsigned int size, unsigned int offset);
 int update_help();
-int update_scan(void **resultDevices, int print_dev_list, unsigned int dev_no, int *success, char *scan_mass_storage);
+int update_scan(void **resultDevices, int print_dev_list, int dev_no, int *success, char *scan_mass_storage);
 int do_cmd_mwrtie (const char **argv, signed int argc, AmlUsbRomRW &rom);
 int update_sub_cmd_run_and_rreg (AmlUsbRomRW &rom, const char *cmd, const char **argv, signed int argc);
 int update_sub_cmd_set_password (AmlUsbRomRW &rom, const char **argv, int argc);

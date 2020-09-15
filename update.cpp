@@ -145,12 +145,11 @@ int update_help () {
     return puts("====>Amlogic update USB tool(Ver 1.5) 2017/05<=============");
 }
 
-int update_scan(void **resultDevices, int print_dev_list, unsigned int dev_no,
+int update_scan(void **resultDevices, int print_dev_list, int dev_no,
     int *success, char *scan_mass_storage) {
     int result = 0;
     char *buf;
     char *candidateDevices[16] = {};
-
     *success = -1;
     candidateDevices[0] = new char[0x800];
     buf = candidateDevices[0];
@@ -166,7 +165,6 @@ int update_scan(void **resultDevices, int print_dev_list, unsigned int dev_no,
         result = -175;
         goto finish;
     }
-
     if (dev_no != -2 && nDevices) {
         if (dev_no + 1 > nDevices) {
             aml_printf("[update]ERR(L%d):", 183);
@@ -188,7 +186,6 @@ int update_scan(void **resultDevices, int print_dev_list, unsigned int dev_no,
             AmlGetMsNumber(candidateDevices[dev_no], 1, scan_mass_storage);
         }
     }
-
     *success = 0;
     if (print_dev_list) {
         printf("\t-------%sdevices list -------\n",
@@ -197,7 +194,6 @@ int update_scan(void **resultDevices, int print_dev_list, unsigned int dev_no,
             printf("WorldCup[%02d].%s\n", j, candidateDevices[j]);
         }
     }
-
 finish:
     if (buf) {
         delete[] buf;
@@ -205,7 +201,7 @@ finish:
     return result;
 }
 
-int do_cmd_mwrtie (const char **argv, signed int argc, AmlUsbRomRW &rom) {
+int do_cmd_mwrtie(const char **argv, signed int argc, AmlUsbRomRW &rom) {
     int result = -229;
     const char *readFile = argv[0];
     const char *storeOrMem = argv[1];
@@ -832,8 +828,8 @@ int update_sub_cmd_mread (AmlUsbRomRW &rom, int argc, const char **argv) {
         return 983;
     }
 
-    rom.bufferLen = readSize;
-    if (ReadMediaFile(&rom, argc <= 4 ? nullptr : argv[4], readSize)) {
+    rom.bufferLen = (unsigned int)readSize;
+    if (ReadMediaFile(&rom, argc <= 4 ? nullptr : argv[4], (long)readSize)) {
         aml_printf("ERR: ReadMediaFile failed!\n");
         return 990;
     }
@@ -857,14 +853,14 @@ int main (int argc, const char **argv) {
         update_help();
         return 0;
     }
-    int dev_no; // [rsp+20h] [rbp-3D0h]
-    int result; // [rsp+28h] [rbp-3C8h]
-    int v24; // [rsp+3Ch] [rbp-3B4h]
-    const char *s1; // [rsp+48h] [rbp-3A8h]
-    const char *str_dev_no; // [rsp+58h] [rbp-398h]
-    AmlUsbRomRW rom = {}; // [rsp+80h] [rbp-370h]
-    char scan_mass_storage[4] = {}; // [rsp+140h] [rbp-2B0h]
-    char dest[512] = {}; // [rsp+1D0h] [rbp-220h]
+    int dev_no;
+    int result;
+    int v24;
+    const char *s1 = null;
+    const char *str_dev_no = null;
+    AmlUsbRomRW rom = {};
+    char scan_mass_storage[4] = {};
+    char dest[512] = {};
     dev_no = -2;
     str_dev_no = nullptr;
     FILE *fp = nullptr;
@@ -991,7 +987,6 @@ int main (int argc, const char **argv) {
         } else {
             printf(" %s\n", scan_mass_storage);
             if (!strcmp(cmd, "msget")) {
-                char buffer[128] = {};
                 if (AmlGetUpdateComplete(nullptr) != 0) {
                     puts("AmlGetUpdateComplete error");
                 } else {
@@ -1000,7 +995,7 @@ int main (int argc, const char **argv) {
                 }
             }
             if (!strcmp(cmd, "msset")) {
-                strlen(s1);
+//              strlen(s1); ???
                 if (AmlSetFileCopyCompleteEx(nullptr) != 0) {
                     printf("AmlSetFileCopyCompleteEx error--%s\n", s1);
                 } else {
@@ -1035,8 +1030,6 @@ int main (int argc, const char **argv) {
         goto finish;
     }
     if (!strcmp(cmd, "tplstat")) {
-        char buffer[64] = {};
-        AmlUsbRomRW rom = {};
         rom.device = rom.device;
         rom.bufferLen = 64;
         rom.buffer = buffer;
@@ -1115,12 +1108,10 @@ int main (int argc, const char **argv) {
     if (!strcmp(cmd, "bulkcmd")) {
         s1 = argv[argc - 1];
         memcpy(dest, s1, strlen(s1));
-        char buffer[128] = {};
         //v32 = nullptr;
         memcpy(buffer, dest, strlen(dest));
         buffer[66] = 1;
         unsigned int v25;
-        AmlUsbRomRW rom = {};
         rom.device = rom.device;
         rom.bufferLen = 68;
         rom.buffer = buffer;
@@ -1207,12 +1198,12 @@ int WriteMediaFile (AmlUsbRomRW *rom, const char *filename) {
     fseeko64(fp, 0, 2);
     off_t fileSize = ftello(fp);
     v17 = 0;
-    int v3 = max(fileSize * 41 / 1600, 0x400000l);
+    int v3 = max((int)fileSize * 41 / 1600, 0x400000l);
     fseek(fp, 0, 0);
-    startTime = timeGetTime();
+    startTime = (int)timeGetTime();
     buffer = (char *)malloc(0x10000);
     while (fileSize) {
-        int bulkSize = min(fileSize, 0x10000l);
+        int bulkSize = min((int)fileSize, 0x10000l);
         fread(buffer, 1, bulkSize, fp);
         rom->buffer = buffer;
         rom->bufferLen = bulkSize;
@@ -1225,12 +1216,12 @@ int WriteMediaFile (AmlUsbRomRW *rom, const char *filename) {
         transferSize += bulkSize;
         fileSize -= bulkSize;
         ++address;
-        v13 = transferSize - v17;
+        v13 = (int)(transferSize - v17);
         if (address == 1) {
             puts("Downloading....");
         }
         if (v13 >= v3) {
-            transferPercentage = 100 * transferSize / fileSize;
+            transferPercentage = 100 * (int)transferSize / (int)fileSize;
             printf("[%3d%%/%5uMB]\r", transferPercentage, (unsigned int)(transferSize >> 20));
             fflush(stdout);
             v17 = v3 * transferPercentage;
@@ -1271,12 +1262,12 @@ int ReadMediaFile (AmlUsbRomRW *rom, const char *filename, long size) {
         }
         if (filename) {
             fwrite(buffer, 1, dataSize, fp);
-            info.update_progress(dataSize);
+            info.update_progress((int)dataSize);
         } else {
-            _print_memory_view(buffer, dataSize, offset);
+            _print_memory_view(buffer, (int)dataSize, (int)offset);
         }
-        offset += dataSize;
-        size -= dataSize;
+        offset += (int)dataSize;
+        size -= (int)dataSize;
         ++v7b;
     }
     if (buffer) {
@@ -1290,7 +1281,7 @@ int ReadMediaFile (AmlUsbRomRW *rom, const char *filename, long size) {
 
 
 DownloadProgressInfo::DownloadProgressInfo (long long total_, const char *prompt_) {
-    nBytes = total_;
+    nBytes = (long)total_;
     percentage_0 = 0;
     percentage_100 = 100;
     percentage = 0;
@@ -1304,15 +1295,15 @@ DownloadProgressInfo::DownloadProgressInfo (long long total_, const char *prompt
     total_div_100 = (int)(nBytes / percentage_100_remain);
     max_4k_total_div_100 = 0x400000;
     if (total_div_100 >= 0x400000) {
-        *(short *) &(max_4k_total_div_100) = total_div_100;
+        *(short *) &(max_4k_total_div_100) = (short)total_div_100;
     }
     max_1_4k_div_total_mul_100 = max_4k_total_div_100 / total_div_100;
 }
 
-int DownloadProgressInfo::update_progress (unsigned int dataLen) {
+int DownloadProgressInfo::update_progress(int dataLen) {
     nBytesDownloaded += dataLen;
     if (nBytesDownloaded == dataLen && percentage_0 == percentage) {
-        startTime = timeGetTime();
+        startTime = (int)timeGetTime();
     }
     if (max_4k_total_div_100 > nBytesDownloaded) {
         return 0;
@@ -1323,8 +1314,7 @@ int DownloadProgressInfo::update_progress (unsigned int dataLen) {
     fflush(stdout);
     if ((unsigned int)(max_1_4k_div_total_mul_100 + percentage) >= percentage_100) {
         printf("\b\b\b\b\b\b\b\b\b\r");
-        printf("[%s]OK:<%ld>MB in <%u>Sec\n", prompt, nBytes >> 20,
-            (timeGetTime() - startTime) / 1000);
+        printf("[%s]OK:<%ld>MB in  %d Sec\n", prompt, nBytes >> 20, ((int)timeGetTime() - startTime) / 1000);
     }
     return 0;
 }

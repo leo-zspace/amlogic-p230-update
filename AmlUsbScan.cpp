@@ -11,7 +11,7 @@
 
 char *DeviceName[8];
 
-bool simg_probe (const unsigned char *buf, unsigned int len) {
+bool simg_probe(const unsigned char *buf, unsigned int len) {
     const unsigned char magic[] = { 0x3A, 0xFF, 0x26, 0xED };
     const unsigned char magic2[] = { 0x28, 0, 0x12, 0 };
     if (len < 0x1C) {
@@ -28,15 +28,13 @@ bool simg_probe (const unsigned char *buf, unsigned int len) {
     return true;
 }
 
-bool is_file_format_sparse (const char *filename) {
+bool is_file_format_sparse(const char *filename) {
     FILE *fp = fopen(filename, "rb");
-
     if (fp == nullptr) {
         aml_printf("[update]ERR(L%d):", 68);
         aml_printf("Fail to open file in mode rb\n");
         return false;
     }
-
     auto buf = new unsigned char[0x2000];
     size_t len = fread(buf, 1, 0x2000, fp);
     fclose(fp);
@@ -47,7 +45,7 @@ bool is_file_format_sparse (const char *filename) {
     return result;
 }
 
-int aml_scan_init () {
+int aml_scan_init() {
     printf("aml_scan_usbdev");
     for (int i = 0; i <= 7; ++i) {
         DeviceName[i] = (char *)malloc(0x100);
@@ -55,7 +53,7 @@ int aml_scan_init () {
     return 0;
 }
 
-int aml_scan_close () {
+int aml_scan_close() {
     for (int i = 0; i <= 7; ++i) {
         free(DeviceName[i]);
         DeviceName[i] = nullptr;
@@ -63,9 +61,8 @@ int aml_scan_close () {
     return 0;
 }
 
-int aml_scan_usbdev (char **candidate_devices) {
+int aml_scan_usbdev(char **candidate_devices) {
     int result;
-
     for (int i = 0; i <= 7; ++i) {
         memset(DeviceName[i], 0, 0x100);
     }
@@ -74,14 +71,13 @@ int aml_scan_usbdev (char **candidate_devices) {
     if (result <= 0) {
         return 0;
     }
-
     for (int i = 0; i < result; ++i) {
         candidate_devices[i] = DeviceName[i];
     }
     return result;
 }
 
-int aml_send_command (void *device, char *mem_type, int retry, char *reply) {
+int aml_send_command(void *device, char *mem_type, int retry, char *reply) {
     unsigned int data_len;
     char buffer[128] = {};
     memcpy(buffer, mem_type, strlen(mem_type));
@@ -107,7 +103,7 @@ int aml_send_command (void *device, char *mem_type, int retry, char *reply) {
 
 //----- (0000000000407898) ----------------------------------------------------
 
-int aml_get_sn (char *target_device, char *usid) {
+int aml_get_sn(char *target_device, char *usid) {
     struct usb_device *device = AmlGetDeviceHandle("WorldCup Device", target_device);
     if (!device) {
         return -1;
@@ -148,7 +144,8 @@ int aml_get_sn (char *target_device, char *usid) {
 }
 
 //----- (0000000000407BA5) ----------------------------------------------------
-int aml_set_sn (char *target_device, char *usid) {
+
+int aml_set_sn(char *target_device, char *usid) {
     struct usb_device *device = AmlGetDeviceHandle("WorldCup Device", target_device);
     if (!device) {
         return -1;
