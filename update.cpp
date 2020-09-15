@@ -5,6 +5,7 @@
 #include "UsbRomDrv.h"
 #include "AmlUsbScan.h"
 #include "defs.h"
+#include <conio.h>
 
 #ifdef _MSC_VER
 #define fseeko64(fp, ofs, origin) _fseeki64(fp, ofs, origin)
@@ -144,7 +145,7 @@ int update_help () {
     return puts("====>Amlogic update USB tool(Ver 1.5) 2017/05<=============");
 }
 
-int update_scan (void **resultDevices, int print_dev_list, unsigned int dev_no,
+int update_scan(void **resultDevices, int print_dev_list, unsigned int dev_no,
     int *success, char *scan_mass_storage) {
     int result = 0;
     char *buf;
@@ -840,23 +841,22 @@ int update_sub_cmd_mread (AmlUsbRomRW &rom, int argc, const char **argv) {
     return 0;
 }
 
+// scan
+// update mread mem 0x1080000 normal c:\mem_2M.dump
+
 int main (int argc, const char **argv) {
     aml_init();
-
     if (argc == 1) {
         update_help();
         return 0;
     }
-
     const char *cmd = argv[1];
     const char **cmdArgv = argv + 3;
     int cmdArgc = argc - 3;
-
     if (!strcmp(cmd, "help")) {
         update_help();
         return 0;
     }
-
     int dev_no; // [rsp+20h] [rbp-3D0h]
     int result; // [rsp+28h] [rbp-3C8h]
     int v24; // [rsp+3Ch] [rbp-3B4h]
@@ -865,14 +865,12 @@ int main (int argc, const char **argv) {
     AmlUsbRomRW rom = {}; // [rsp+80h] [rbp-370h]
     char scan_mass_storage[4] = {}; // [rsp+140h] [rbp-2B0h]
     char dest[512] = {}; // [rsp+1D0h] [rbp-220h]
-
     dev_no = -2;
     str_dev_no = nullptr;
     FILE *fp = nullptr;
     char *buffer = nullptr;
     int  success = 0;
     result = -1015;
-
     if (!strcmp(cmd, "scan")) {
         if (argc == 2) {
             update_scan(nullptr, 1, -2, &success, nullptr);
@@ -887,7 +885,6 @@ int main (int argc, const char **argv) {
         }
         return 0;
     }
-
     // find dev no
     if (argc > 2) {
         const char* strArgDev = argv[2];
@@ -916,28 +913,23 @@ int main (int argc, const char **argv) {
         dev_no = 0;
         cmdArgc = 0;
     }
-
     if (!rom.device && update_scan((void **)&rom.device, 0, dev_no, &success, nullptr) != 0) {
         aml_printf("[update]ERR(L%d):", 1090);
         aml_printf("can not find device\n");
         goto finish;
     }
-
     if (!rom.device) {
         aml_printf("[update]ERR(L%d):", 1094);
         aml_printf("can not open dev[%d] device, maybe it not exist!\n", dev_no);
         goto finish;
     }
-
     if (!strcmp(cmd, "run") || !strcmp(cmd, "rreg")) {
         return update_sub_cmd_run_and_rreg(rom, cmd, cmdArgv, cmdArgc);
     }
-
     if (!strcmp("password", cmd)) {
         result = update_sub_cmd_set_password(rom, cmdArgv, cmdArgc);
         goto finish;
     }
-
     if (!strcmp("chipinfo", cmd)) {
         if (cmdArgc <= 0) {
             aml_printf("[update]ERR(L%d):", 1112);
@@ -947,19 +939,16 @@ int main (int argc, const char **argv) {
         }
         goto finish;
     }
-
     if (!strcmp(cmd, "chipid")) {
         result = update_sub_cmd_get_chipid(rom, cmdArgv);
         goto finish;
     }
-
     if (!strcmp(cmd, "write") || !strcmp(cmd, "read") || !strcmp(cmd, "wreg") ||
         !strcmp(cmd, "dump") || !strcmp(cmd, "boot") || !strcmp(cmd, "cwr") ||
         !strcmp(cmd, "write2")) {
         result = update_sub_cmd_read_write(rom, cmd, cmdArgv, cmdArgc);
         goto finish;
     }
-
     if (!strcmp(cmd, "msdev") || !strcmp(cmd, "msget") || !strcmp(cmd, "msset")) {
         if (!strcmp(cmd, "msset")) {
             dev_no = 0;
@@ -1021,12 +1010,10 @@ int main (int argc, const char **argv) {
         }
         goto finish;
     }
-
     if (!strcmp(cmd, "identify")) {
         update_sub_cmd_identify_host(rom, cmdArgc ? atoi(cmdArgv[0]) : 4, nullptr);
         goto finish;
     }
-
     if (!strcmp(cmd, "reset")) {
         if (AmlResetDev(&rom)) {
             aml_printf("[update]ERR(L%d):", 1216);
@@ -1036,12 +1023,10 @@ int main (int argc, const char **argv) {
         }
         goto finish;
     }
-
     if (!strcmp(cmd, "tplcmd")) {
         update_sub_cmd_tplcmd(rom, argv[argc - 1]);
         goto finish;
     }
-
     if (!strcmp(cmd, "burn")) {
         if (AmlUsbburn(rom.device, "d:/u-boot.bin", 0x49000000, "nand", 0x12345678, 0x2000,
             0) < 0) {
@@ -1049,7 +1034,6 @@ int main (int argc, const char **argv) {
         }
         goto finish;
     }
-
     if (!strcmp(cmd, "tplstat")) {
         char buffer[64] = {};
         AmlUsbRomRW rom = {};
@@ -1063,7 +1047,6 @@ int main (int argc, const char **argv) {
         }
         goto finish;
     }
-
     if (!strcmp(cmd, "skscan") || !strcmp(cmd, "skgsn") || !strcmp(cmd, "skssn")) {
         char *v38[8] = {};
         aml_scan_init();
@@ -1081,32 +1064,30 @@ int main (int argc, const char **argv) {
             update_help();
             goto finish;
         }
-
-        printf("发现 %d 个设备\n", aml_scan_usbdev(v38));
+        printf("Find %d Devices\n", aml_scan_usbdev(v38));
         if (!strcmp(cmd, "skgsn")) {
             v24 = aml_get_sn(v38[dev_no], dest);
             if (v24 == 0) {
-                puts("此设备没有写过SN ");
+                puts("This device is not found SN ");
             } else if (v24 == -1) {
-                printf("没有此设备[设备号%d]\n", dev_no);
+                printf("No such device[devno=%d]\n", dev_no);
             } else if (v24 > 0) {
                 dest[v24] = 0;
-                printf("此设备的SN :%s\n", dest);
+                printf("Of this device SN :%s\n", dest);
             }
         } else if (!strcmp(cmd, "skssn")) {
             v24 = aml_set_sn(v38[dev_no], (char *)argv[argc - 1]);
             if (v24 == 0) {
-                puts("写此设备的SN失败!!!");
+                puts("Failed to write the SN of this device!!!");
             } else if (v24 == -1) {
-                printf("没有此设备[设备号%d]\n", dev_no);
+                printf("No such device[devno=%d]\n", dev_no);
             } else if (v24 > 0) {
-                puts("写此设备的SN成功");
+                puts("Successfully write the SN of this device");
             }
         }
         aml_scan_close();
         goto finish;
     }
-
     if (!strcmp(cmd, "mwrite")) {
         if (argc > 5) {
             result = do_cmd_mwrtie(cmdArgv, cmdArgc, rom);
@@ -1115,7 +1096,6 @@ int main (int argc, const char **argv) {
         }
         goto finish;
     }
-
     if (!strcmp(cmd, "partition")) {
         if (argc > 3) {
             int mwriteArgc = 4;
@@ -1132,7 +1112,6 @@ int main (int argc, const char **argv) {
         }
         goto finish;
     }
-
     if (!strcmp(cmd, "bulkcmd")) {
         s1 = argv[argc - 1];
         memcpy(dest, s1, strlen(s1));

@@ -51,7 +51,7 @@ int usb_bulk_write(usbio_file_t file, int ep, char *bytes, int size, int timeout
 
 const char* usb_strerror() { return "usb error"; }
 
-int IOCTL_READ_MEM_Handler (usbDevIoCtrl ctrl) {
+int IOCTL_READ_MEM_Handler(usbDevIoCtrl ctrl) {
     if (!ctrl.in_buf || !ctrl.out_buf || ctrl.in_len != 4 || !ctrl.out_len) {
         return 0;
     }
@@ -66,13 +66,12 @@ int IOCTL_READ_MEM_Handler (usbDevIoCtrl ctrl) {
     return ret >= 0;
 }
 
-int IOCTL_WRITE_MEM_Handler (usbDevIoCtrl ctrl) {
+int IOCTL_WRITE_MEM_Handler(usbDevIoCtrl ctrl) {
     if (!ctrl.in_buf || ctrl.in_len <= 2) {
         aml_printf("f(%s)L%d, ivlaid, in_buf=0x, in_len=%d\n", "AmlLibusb/AmlLibusb.cpp",
             47LL, ctrl.in_buf, ctrl.in_len);
         return 0;
     }
-
     int ret = usb_control_msg(handle, USB_ENDPOINT_OUT | USB_TYPE_VENDOR,
         AML_LIBUSB_REQ_WRITE_CTRL, SHORT_AT(ctrl.in_buf, 2),
         SHORT_AT(ctrl.in_buf, 0), ctrl.in_buf + 4,
@@ -92,19 +91,18 @@ int IOCTL_WRITE_AUX_REG_Handler (usbDevIoCtrl ctrl) {
     return 0;
 }
 
-int IOCTL_FILL_MEM_Handler (usbDevIoCtrl ctrl) {
+int IOCTL_FILL_MEM_Handler(usbDevIoCtrl ctrl) {
     return 0;
 }
 
-int IOCTL_MODIFY_MEM_Handler (usbDevIoCtrl ctrl) {
+int IOCTL_MODIFY_MEM_Handler(usbDevIoCtrl ctrl) {
     return 0;
 }
 
-int IOCTL_RUN_IN_ADDR_Handler (usbDevIoCtrl ctrl) {
+int IOCTL_RUN_IN_ADDR_Handler(usbDevIoCtrl ctrl) {
     if (!ctrl.in_buf || ctrl.in_len != 4) {
         return 0;
     }
-
     ctrl.in_buf[0] |= 0x10;
     usb_control_msg(handle, USB_ENDPOINT_OUT | USB_TYPE_VENDOR,
         AML_LIBUSB_REQ_RUN_ADDR, SHORT_AT(ctrl.in_buf, 2),
@@ -112,11 +110,10 @@ int IOCTL_RUN_IN_ADDR_Handler (usbDevIoCtrl ctrl) {
     return 1LL;
 }
 
-int IOCTL_DO_LARGE_MEM_Handler (usbDevIoCtrl ctrl, int readOrWrite) {
+int IOCTL_DO_LARGE_MEM_Handler(usbDevIoCtrl ctrl, int readOrWrite) {
     if (!ctrl.in_buf || ctrl.in_len <= 0xF) {
         return 0;
     }
-
     int value = 0;
     if (ctrl.in_len > 32) {
         value = *((unsigned short *)ctrl.in_buf + 32);
@@ -138,7 +135,7 @@ int IOCTL_DO_LARGE_MEM_Handler (usbDevIoCtrl ctrl, int readOrWrite) {
     return ret >= 0;
 }
 
-int IOCTL_IDENTIFY_HOST_Handler (usbDevIoCtrl ctrl) {
+int IOCTL_IDENTIFY_HOST_Handler(usbDevIoCtrl ctrl) {
     if (ctrl.out_buf && ctrl.out_len <= 8) {
         int ret = usb_control_msg(handle, USB_ENDPOINT_IN | USB_TYPE_VENDOR,
             AML_LIBUSB_REQ_IDENTIFY, 0, 0, ctrl.out_buf, ctrl.out_len,
@@ -155,11 +152,10 @@ int IOCTL_IDENTIFY_HOST_Handler (usbDevIoCtrl ctrl) {
     }
 }
 
-int IOCTL_TPL_CMD_Handler (usbDevIoCtrl ctrl) {
+int IOCTL_TPL_CMD_Handler(usbDevIoCtrl ctrl) {
     if (!ctrl.in_buf || ctrl.in_len != 68) {
         return 0;
     }
-
     int ret = usb_control_msg(handle, USB_ENDPOINT_OUT | USB_TYPE_VENDOR,
         AML_LIBUSB_REQ_TPL_CMD, SHORT_AT(ctrl.in_buf, 64),
         SHORT_AT(ctrl.in_buf, 66), ctrl.in_buf, 64, 50000);
@@ -215,7 +211,6 @@ int IOCTL_READ_MEDIA_Handler (usbDevIoCtrl ctrl, unsigned int timeout) {
     if (!ctrl.in_buf || ctrl.in_len <= 0xF) {
         return 0;
     }
-
     int value = 0;
     if (ctrl.in_len > 32) {
         value = *((short *)ctrl.in_buf + 32);
@@ -240,7 +235,6 @@ int IOCTL_BULK_CMD_Handler (usbDevIoCtrl ctrl, unsigned int a1, unsigned int req
     if (!ctrl.in_buf || ctrl.in_len != 68) {
         return 0;
     }
-
     int ret = usb_control_msg(handle, 64, request, 0, 2, ctrl.in_buf, 64, 50000);
     *ctrl.p_in_data_size = (unsigned int)max(0, ret);
     if (ret < 0) {
@@ -250,7 +244,7 @@ int IOCTL_BULK_CMD_Handler (usbDevIoCtrl ctrl, unsigned int a1, unsigned int req
     return ret >= 0;
 }
 
-int usbDeviceIoControl (AmlUsbDrv *drv, unsigned int control_code, void *in_buf,
+int usbDeviceIoControl(AmlUsbDrv *drv, unsigned int control_code, void *in_buf,
     unsigned int in_len, void *out_buf, unsigned int out_len,
     unsigned int *in_data_size, unsigned int *out_data_size) {
     usbDevIoCtrl ctrl = {};
@@ -294,7 +288,7 @@ int usbDeviceIoControl (AmlUsbDrv *drv, unsigned int control_code, void *in_buf,
     }
 }
 
-int usbDeviceIoControlEx (AmlUsbDrv *drv, unsigned int controlCode, void *in_buf,
+int usbDeviceIoControlEx(AmlUsbDrv *drv, unsigned int controlCode, void *in_buf,
     unsigned int in_len, void *out_buf, unsigned int out_len,
     unsigned int *in_data_size, unsigned int *out_data_size,
     unsigned int timeout) {
@@ -327,7 +321,7 @@ int usbDeviceIoControlEx (AmlUsbDrv *drv, unsigned int controlCode, void *in_buf
     }
 }
 
-int usbReadFile (AmlUsbDrv *drv, void *buf, unsigned int len, unsigned int *read) {
+int usbReadFile(AmlUsbDrv *drv, void *buf, unsigned int len, unsigned int *read) {
     int ret = usb_bulk_read(handle, drv->read_ep, (char *)buf, len, 90000);
     *read = (unsigned int)max(0, ret);
     if (ret < 0) {
@@ -336,7 +330,7 @@ int usbReadFile (AmlUsbDrv *drv, void *buf, unsigned int len, unsigned int *read
     return ret >= 0;
 }
 
-int usbWriteFile (AmlUsbDrv *drv, const void *buf, unsigned int len, unsigned int *read) {
+int usbWriteFile(AmlUsbDrv *drv, const void *buf, unsigned int len, unsigned int *read) {
     int ret = usb_bulk_write(handle, drv->write_ep, (char *)buf, len, 50000);
     *read = (unsigned int)max(0, ret);
     if (ret < 0) {
@@ -345,7 +339,7 @@ int usbWriteFile (AmlUsbDrv *drv, const void *buf, unsigned int len, unsigned in
     return ret >= 0;
 }
 
-int OpenUsbDevice (AmlUsbDrv *drv) {
+int OpenUsbDevice(AmlUsbDrv *drv) {
     int r = usbio_open(AML_ID_VENDOR, AML_ID_PRODUCE, &handle, 1);
     assert(r == 0);
     drv->read_ep = (unsigned char)0x81;
